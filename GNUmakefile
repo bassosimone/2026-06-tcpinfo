@@ -40,3 +40,13 @@ build_ndt7_download:
 	./scripts/build_ndt7_download.py --start-date 2026-05-29 --end-date 2026-06-01
 
 #doc:
+#doc: - build_tcpinfo_download: builds tcpinfo download parquet files
+.PHONY: build_tcpinfo_download
+build_tcpinfo_download:
+	./scripts/build_tcpinfo_download.py --start-date 2026-05-01 --end-date 2026-05-08
+	./scripts/build_tcpinfo_download.py --start-date 2026-05-08 --end-date 2026-05-15
+	./scripts/build_tcpinfo_download.py --start-date 2026-05-15 --end-date 2026-05-22
+	./scripts/build_tcpinfo_download.py --start-date 2026-05-22 --end-date 2026-05-29
+	./scripts/build_tcpinfo_download.py --start-date 2026-05-29 --end-date 2026-06-01
+
+#doc:
