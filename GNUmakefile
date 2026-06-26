@@ -74,3 +74,9 @@ gap_regression:
 	./scripts/gap_regression.py --input data/three_tier_20260501_20260601.parquet
 
 #doc:
+#doc: - error_propagation: error propagation analysis
+.PHONY: error_propagation
+error_propagation:
+	./scripts/error_propagation.py --input data/three_tier_20260501_20260601.parquet
+
+#doc:

@@ -136,3 +136,15 @@ client elapsed time is at least 9.5s, and tests where the
 server elapsed time is at least 9.5s.
 
 Run `make gap_regression` to produce the analysis.
+
+### Error Propagation
+
+The [error_propagation.py](scripts/error_propagation.py) script
+measures how accurately different speed metrics approximate the
+ground truth. It uses T1 (tcpinfo sidecar) `BytesAcked / elapsed`
+as the reference and compares T3 app goodput, T2 and T3
+`BytesAcked / elapsed`, T3 `DeliveryRate`, and T3 `BBR BW`.
+It reports the median and p90 of the absolute relative error,
+overall and per country.
+
+Run `make error_propagation` to produce the analysis.
