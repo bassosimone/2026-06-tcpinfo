@@ -13,6 +13,7 @@ import pandas as pd
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 TCPINFO_FIELDS = [
+    "State",
     "ElapsedTime",
     "BytesAcked",
     "BytesReceived",
