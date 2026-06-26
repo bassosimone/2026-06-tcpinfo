@@ -56,3 +56,9 @@ build_superset_download:
 	./scripts/build_superset_download.py --start-date 2026-05-01 --end-date 2026-06-01
 
 #doc:
+#doc: - build_three_tier: builds three-tier joined parquet file
+.PHONY: build_three_tier
+build_three_tier:
+	./scripts/build_three_tier.py --start-date 2026-05-01 --end-date 2026-06-01
+
+#doc:

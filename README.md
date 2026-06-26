@@ -85,3 +85,23 @@ time and bytes (for app-level goodput). It also preserves the
 
 Run `make build_superset_download` to build the monthly export.
 This produces `data/superset_20260501_20260601_download.parquet`.
+
+## Building the Three-Tier Joined Dataset
+
+The [build_three_tier.py](scripts/build_three_tier.py) script
+joins all three data sources into a single per-test parquet file.
+It loads all per-snapshot parquets (T1 and T2) and per-test
+parquets (T3) whose date ranges overlap the requested window,
+aggregates T1 and T2 to one row per test (last ESTABLISHED
+snapshot), and inner-joins on UUID — so only tests present in
+all three tiers survive.
+
+For T1 (tcpinfo sidecar), only ESTABLISHED snapshots are used,
+filtering out post-test states (FIN_WAIT, CLOSE_WAIT). The
+script also computes `t1_notsent_max` (peak NotsentBytes across
+ESTABLISHED snapshots). The inner join with T1 and T2 provides temporal filtering
+for T3 (Superset), which does not include a server-side
+timestamp.
+
+Run `make build_three_tier` to build the joined dataset. This
+produces `data/three_tier_20260501_20260601.parquet`.
