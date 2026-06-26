@@ -108,3 +108,19 @@ snapshot timestamp.
 
 Run `make build_three_tier` to build the joined dataset. This
 produces `data/three_tier_20260501_20260601.parquet`.
+
+## Analysis
+
+The following scripts analyze the three-tier joined dataset.
+Each script focuses on a single research question and reads
+the parquet file produced by `build_three_tier`.
+
+### Gap Distribution
+
+The [gap_distribution.py](scripts/gap_distribution.py) script
+measures the gap between client-reported and server-reported
+test duration: `client_elapsed - server_elapsed`. It reports
+percentile statistics overall, per country, and per-school
+heterogeneity (schools with at least 10 tests).
+
+Run `make gap_distribution` to produce the analysis.

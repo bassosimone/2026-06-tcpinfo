@@ -62,3 +62,9 @@ build_three_tier:
 	./scripts/build_three_tier.py --start-date 2026-05-01 --end-date 2026-06-01
 
 #doc:
+#doc: - gap_distribution: gap distribution analysis
+.PHONY: gap_distribution
+gap_distribution:
+	./scripts/gap_distribution.py --input data/three_tier_20260501_20260601.parquet
+
+#doc:
