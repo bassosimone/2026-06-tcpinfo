@@ -86,3 +86,9 @@ t3_only_regression:
 	./scripts/t3_only_regression.py --input data/three_tier_20260501_20260601.parquet
 
 #doc:
+#doc: - tail_loss: Superset tail loss analysis
+.PHONY: tail_loss
+tail_loss:
+	./scripts/tail_loss.py --input data/three_tier_20260501_20260601.parquet
+
+#doc:

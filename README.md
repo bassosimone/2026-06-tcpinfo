@@ -158,3 +158,13 @@ from the client's `LastServerMeasurement`. This tests whether
 the gap can be predicted without the tcpinfo sidecar.
 
 Run `make t3_only_regression` to produce the analysis.
+
+### Tail Loss
+
+The [tail_loss.py](scripts/tail_loss.py) script measures how
+much test duration the client's `LastServerMeasurement` misses
+compared to the server's final `ServerMeasurement`. A positive
+tail loss means the client stopped collecting snapshots before
+the server did.
+
+Run `make tail_loss` to produce the analysis.
