@@ -8,6 +8,7 @@ and server-side data collected by the tcp-info sidecar.
 
 - [uv](https://docs.astral.sh/uv/) for managing Python
   dependencies and running scripts.
+
 - GNU make (the `GNUmakefile` is not compatible with BSD
   make or other make variants).
 
@@ -47,3 +48,15 @@ generated `superset_*.sql` query in the Superset SQL Lab
 and export the result as CSV. Save it as
 `data/superset_{YYYYMMDD}_{YYYYMMDD}.csv.gz`.
 
+## Transforming ndt-server ndt7 Data
+
+The [build_ndt7_download.py](scripts/build_ndt7_download.py) script
+converts each raw ndt7 JSON export into a per-snapshot parquet file
+for download tests. Each row is one `ServerMeasurements` snapshot
+(not one test), preserving the full time series. The script projects
+a fixed set of `TCPInfo` and `BBRInfo` fields without computing
+any derived values.
+
+Run `make build_ndt7_download` to build all weekly blocks. This
+produces files like `data/ndt7_20260501_20260508_download.parquet`
+in the `data/` directory.

@@ -30,3 +30,13 @@ export_mlab_data: generate_queries
 	./scripts/export_mlab_data.py --start-date 2026-05-29 --end-date 2026-06-01
 
 #doc:
+#doc: - build_ndt7_download: builds ndt7 download parquet files
+.PHONY: build_ndt7_download
+build_ndt7_download:
+	./scripts/build_ndt7_download.py --start-date 2026-05-01 --end-date 2026-05-08
+	./scripts/build_ndt7_download.py --start-date 2026-05-08 --end-date 2026-05-15
+	./scripts/build_ndt7_download.py --start-date 2026-05-15 --end-date 2026-05-22
+	./scripts/build_ndt7_download.py --start-date 2026-05-22 --end-date 2026-05-29
+	./scripts/build_ndt7_download.py --start-date 2026-05-29 --end-date 2026-06-01
+
+#doc:
