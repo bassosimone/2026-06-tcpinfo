@@ -50,3 +50,9 @@ build_tcpinfo_download:
 	./scripts/build_tcpinfo_download.py --start-date 2026-05-29 --end-date 2026-06-01
 
 #doc:
+#doc: - build_superset_download: builds superset download parquet file
+.PHONY: build_superset_download
+build_superset_download:
+	./scripts/build_superset_download.py --start-date 2026-05-01 --end-date 2026-06-01
+
+#doc:

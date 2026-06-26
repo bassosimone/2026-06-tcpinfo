@@ -73,3 +73,15 @@ to a download test.
 Run `make build_tcpinfo_download` to build all weekly blocks. This
 produces files like `data/tcpinfo_20260501_20260508_download.parquet`
 in the `data/` directory.
+
+## Transforming Superset Data
+
+The [build_superset_download.py](scripts/build_superset_download.py) script
+converts the Superset CSV export into a per-test parquet file for
+download tests. Each row is one test with the `LastServerMeasurement`
+`TCPInfo` and `BBRInfo` fields plus `LastClientMeasurement` elapsed
+time and bytes (for app-level goodput). It also preserves the
+`country_code`, `school_id`, and `giga_id_school` metadata.
+
+Run `make build_superset_download` to build the monthly export.
+This produces `data/superset_20260501_20260601_download.parquet`.
