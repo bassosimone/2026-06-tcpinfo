@@ -11,6 +11,10 @@ For T1 (tcpinfo sidecar), only ESTABLISHED snapshots (tcp_State == 1)
 are used, filtering out post-test states (e.g. FIN_WAIT).
 
 To merge T3 (Superset) we rely on the inner join with T1 and T2.
+
+Since the tcpinfo sidecar has no kernel ElapsedTime, we derive
+t1_elapsed_s as wall-clock time from T2's StartTime to the last
+T1 snapshot timestamp.
 """
 
 import re
@@ -144,6 +148,12 @@ def main(start_date, end_date):
 
     click.echo("Joining on UUID (inner)...")
     joined = t2.merge(t1, on="uuid").merge(t3, on="uuid")
+
+    # T1 has no kernel ElapsedTime; compute wall-clock elapsed
+    # from T2's StartTime to the last T1 snapshot timestamp.
+    t1_ts = pd.to_datetime(joined["t1_timestamp"], utc=True)
+    t2_st = pd.to_datetime(joined["t2_start_time"], utc=True)
+    joined["t1_elapsed_s"] = (t1_ts - t2_st).dt.total_seconds()
 
     out_path = DATA_DIR / f"three_tier_{suffix}.parquet"
     joined.to_parquet(out_path, index=False)

@@ -101,7 +101,10 @@ filtering out post-test states (FIN_WAIT, CLOSE_WAIT). The
 script also computes `t1_notsent_max` (peak NotsentBytes across
 ESTABLISHED snapshots). The inner join with T1 and T2 provides temporal filtering
 for T3 (Superset), which does not include a server-side
-timestamp.
+timestamp. Since the tcpinfo sidecar has no kernel
+`ElapsedTime`, the script derives `t1_elapsed_s` as
+wall-clock time from T2's `StartTime` to the last T1
+snapshot timestamp.
 
 Run `make build_three_tier` to build the joined dataset. This
 produces `data/three_tier_20260501_20260601.parquet`.
