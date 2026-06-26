@@ -68,3 +68,9 @@ gap_distribution:
 	./scripts/gap_distribution.py --input data/three_tier_20260501_20260601.parquet
 
 #doc:
+#doc: - gap_regression: gap regression analysis
+.PHONY: gap_regression
+gap_regression:
+	./scripts/gap_regression.py --input data/three_tier_20260501_20260601.parquet
+
+#doc:

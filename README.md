@@ -124,3 +124,15 @@ percentile statistics overall, per country, and per-school
 heterogeneity (schools with at least 10 tests).
 
 Run `make gap_distribution` to produce the analysis.
+
+### Gap Regression
+
+The [gap_regression.py](scripts/gap_regression.py) script
+tests whether the gap can be predicted by the ratio of peak
+unsent bytes to pacing rate (`notsent_max / pacing_rate`),
+which estimates the time to drain the send buffer. It runs
+OLS regression on two clean-close subsets: tests where the
+client elapsed time is at least 9.5s, and tests where the
+server elapsed time is at least 9.5s.
+
+Run `make gap_regression` to produce the analysis.
