@@ -148,3 +148,13 @@ It reports the median and p90 of the absolute relative error,
 overall and per country.
 
 Run `make error_propagation` to produce the analysis.
+
+### T3-Only Regression
+
+The [t3_only_regression.py](scripts/t3_only_regression.py) script
+runs the same gap regression as `gap_regression.py` but using
+only Superset (T3) predictors — `NotsentBytes / PacingRate`
+from the client's `LastServerMeasurement`. This tests whether
+the gap can be predicted without the tcpinfo sidecar.
+
+Run `make t3_only_regression` to produce the analysis.

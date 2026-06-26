@@ -80,3 +80,9 @@ error_propagation:
 	./scripts/error_propagation.py --input data/three_tier_20260501_20260601.parquet
 
 #doc:
+#doc: - t3_only_regression: T3-only gap regression analysis
+.PHONY: t3_only_regression
+t3_only_regression:
+	./scripts/t3_only_regression.py --input data/three_tier_20260501_20260601.parquet
+
+#doc:
