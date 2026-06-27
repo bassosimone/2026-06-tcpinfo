@@ -13,6 +13,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 TCPINFO_FIELDS = [
     "State",
+    "CAState",
     "ElapsedTime",
     "BytesAcked",
     "BytesReceived",
@@ -25,6 +26,11 @@ TCPINFO_FIELDS = [
     "RTTVar",
     "SndCwnd",
     "SndMSS",
+    "SndWnd",
+    "Unacked",
+    "Sacked",
+    "Lost",
+    "Retrans",
     "BusyTime",
     "RWndLimited",
     "SndBufLimited",
@@ -72,6 +78,7 @@ def main(start_date, end_date):
         date = r.get("date")
         start_time = dl.get("StartTime")
         end_time = dl.get("EndTime")
+        server_site = r.get("server", {}).get("Site")
 
         for idx, sm in enumerate(sms):
             tcp = sm.get("TCPInfo") or {}
@@ -82,6 +89,7 @@ def main(start_date, end_date):
                 "date": date,
                 "start_time": start_time,
                 "end_time": end_time,
+                "server_site": server_site,
                 "snapshot_index": idx,
             }
             for field in TCPINFO_FIELDS:

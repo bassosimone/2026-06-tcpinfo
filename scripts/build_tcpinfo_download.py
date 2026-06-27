@@ -13,6 +13,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 TCPINFO_FIELDS = [
     "State",
+    "CAState",
     "ElapsedTime",
     "BytesAcked",
     "BytesReceived",
@@ -25,6 +26,11 @@ TCPINFO_FIELDS = [
     "RTTVar",
     "SndCwnd",
     "SndMSS",
+    "SndWnd",
+    "Unacked",
+    "Sacked",
+    "Lost",
+    "Retrans",
     "BusyTime",
     "RWndLimited",
     "SndBufLimited",
