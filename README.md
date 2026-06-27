@@ -109,6 +109,20 @@ snapshot timestamp.
 Run `make build_three_tier` to build the joined dataset. This
 produces `data/three_tier_20260501_20260601.parquet`.
 
+## Explorer
+
+The [explorer/](explorer/) directory contains a Streamlit app for
+interactive inspection of individual ndt7 download tests. It shows
+the full TCPInfo/BBRInfo time series from two independent data
+sources — the ndt7 server and the tcp-info sidecar — which can
+be overlaid, viewed separately, or merged. Each chart includes an
+expandable description explaining the plotted variables; the
+authoritative reference for variable definitions is
+[docs/tcpinfo_inventory_llm.txt](docs/tcpinfo_inventory_llm.txt).
+
+Run `make explorer` to launch the app. It requires the three-tier
+parquet and per-snapshot parquets in `data/`.
+
 ## Analysis
 
 The following scripts analyze the three-tier joined dataset.

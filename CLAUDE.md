@@ -10,6 +10,8 @@ considerations, and common interpretation pitfalls.
 ## Conventions
 
 - Use `uv run` to run Python scripts (never `pip install`).
-- Use `click` for CLI argument parsing (not argparse).
+- Use `click` for CLI argument parsing in scripts. The Streamlit
+  explorer uses `argparse` because Click's decorator model conflicts
+  with Streamlit re-executing the script on every widget interaction.
 - Scripts use `#!/usr/bin/env -S uv run` as shebang.
 - The `GNUmakefile` orchestrates the pipeline.

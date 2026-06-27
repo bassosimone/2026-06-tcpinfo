@@ -92,3 +92,9 @@ tail_loss:
 	./scripts/tail_loss.py --input data/three_tier_20260501_20260601.parquet
 
 #doc:
+#doc: - explorer: launch the TCPInfo measurement explorer (Streamlit)
+.PHONY: explorer
+explorer:
+	uv run streamlit run explorer/app.py -- --file data/three_tier_20260501_20260601.parquet
+
+#doc:
