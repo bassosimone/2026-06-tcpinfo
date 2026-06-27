@@ -7,7 +7,10 @@ and server-side data collected by the tcp-info sidecar.
 ## Requirements
 
 - [uv](https://docs.astral.sh/uv/) for managing Python
-  dependencies and running scripts.
+  dependencies and running scripts. All Python dependencies
+  (click, pandas, plotly, pyarrow, statsmodels, streamlit)
+  are declared in `pyproject.toml` and resolved automatically
+  by `uv run` — no manual install step is needed.
 
 - GNU make (the `GNUmakefile` is not compatible with BSD
   make or other make variants).
