@@ -11,14 +11,13 @@ Run with: uv run streamlit run explorer/app.py -- --file data/three_tier.parquet
 """
 
 import argparse
-from pathlib import Path
 import glob
-import sys
+from pathlib import Path
 
 import pandas as pd
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import streamlit as st
+from plotly.subplots import make_subplots
 
 DESC_DIR = Path(__file__).resolve().parent
 

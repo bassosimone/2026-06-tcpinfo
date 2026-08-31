@@ -2,7 +2,6 @@
 
 """Generate SQL queries from templates by substituting date placeholders."""
 
-from datetime import date
 from pathlib import Path
 
 import click
