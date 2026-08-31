@@ -52,8 +52,29 @@ def find_parquets(prefix, win_start, win_end):
     return results
 
 
-def load_concat(paths, label):
-    """Load and concatenate parquet files."""
+def report_duplicates(df, label, key):
+    """Report rows sharing the same key, as a data ingestion quality signal.
+
+    The key varies depending on the input data source:
+
+    1. it is (uuid, snapshot_index) for data sources including multiple
+       rows per uuid (tcpinfo and ndt7)
+
+    2. it is just the uuid for superset where there is a single row
+       capturing the last snapshot the server sent to the client
+
+    Elevated numbers of duplicates suggest upstream data quality issues, while
+    low numbers compared to the data volume should be tolerated.
+    """
+    n = int(df.duplicated(subset=key).sum())
+    if n > 0:
+        click.echo(
+            f"  WARNING: {label}: {n} rows duplicate an earlier ({', '.join(key)})"
+        )
+
+
+def load_concat(paths, label, key):
+    """Load and concatenate parquet files, reporting duplicate rows."""
     if not paths:
         raise click.ClickException(f"no {label} parquet files found")
     dfs = []
@@ -61,7 +82,9 @@ def load_concat(paths, label):
         df = pd.read_parquet(p)
         click.echo(f"  {p.name}: {len(df)} rows")
         dfs.append(df)
-    return pd.concat(dfs, ignore_index=True)
+    result = pd.concat(dfs, ignore_index=True)
+    report_duplicates(result, label, key)
+    return result
 
 
 def prefix_cols(df, prefix, skip=("uuid",)):
@@ -90,10 +113,14 @@ def agg_tcpinfo(df):
     est = est.sort_values(["uuid", "snapshot_index"])
 
     last = est.drop_duplicates(subset="uuid", keep="last").copy()
-    stats = est.groupby("uuid").agg(
-        t1_n_snapshots=("snapshot_index", "count"),
-        t1_notsent_max=("tcp_NotsentBytes", "max"),
-    ).reset_index()
+    stats = (
+        est.groupby("uuid")
+        .agg(
+            t1_n_snapshots=("snapshot_index", "count"),
+            t1_notsent_max=("tcp_NotsentBytes", "max"),
+        )
+        .reset_index()
+    )
 
     result = last.drop(columns=["snapshot_index"]).merge(stats, on="uuid")
     return prefix_cols(result, "t1")
@@ -125,17 +152,21 @@ def main(start_date, end_date):
     suffix = f"{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}"
 
     click.echo("Loading ndt7 (T2)...")
-    t2_raw = load_concat(find_parquets("ndt7", start, end), "ndt7")
+    t2_raw = load_concat(
+        find_parquets("ndt7", start, end), "ndt7", ["uuid", "snapshot_index"]
+    )
     n_t2_tests = t2_raw["uuid"].nunique()
     click.echo(f"  total: {len(t2_raw)} snapshots, {n_t2_tests} tests\n")
 
     click.echo("Loading tcpinfo (T1)...")
-    t1_raw = load_concat(find_parquets("tcpinfo", start, end), "tcpinfo")
+    t1_raw = load_concat(
+        find_parquets("tcpinfo", start, end), "tcpinfo", ["uuid", "snapshot_index"]
+    )
     n_t1_tests = t1_raw["uuid"].nunique()
     click.echo(f"  total: {len(t1_raw)} snapshots, {n_t1_tests} tests\n")
 
     click.echo("Loading superset (T3)...")
-    t3_raw = load_concat(find_parquets("superset", start, end), "superset")
+    t3_raw = load_concat(find_parquets("superset", start, end), "superset", ["uuid"])
     click.echo(f"  total: {len(t3_raw)} tests\n")
 
     click.echo("Aggregating T2 (last snapshot per test)...")
