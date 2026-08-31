@@ -52,8 +52,8 @@ def find_parquets(prefix, win_start, win_end):
     return results
 
 
-def report_duplicates(df, label, key):
-    """Report rows sharing the same key, as a data ingestion quality signal.
+def dedup(df, label, key):
+    """Drop rows sharing the same key, warning when this happens.
 
     The key varies depending on the input data source:
 
@@ -65,16 +65,25 @@ def report_duplicates(df, label, key):
 
     Elevated numbers of duplicates suggest upstream data quality issues, while
     low numbers compared to the data volume should be tolerated.
+
+    We drop rather than just warn because downstream consumers treat the
+    uuid as the test identity: the explorer indexes by uuid (and raises
+    on a non-unique index) and the analysis scripts would otherwise count
+    the duplicated tests more than once. We keep the first occurrence,
+    which is deterministic because we load the input files in sorted
+    order, and we renumber the index so that it stays contiguous.
     """
     n = int(df.duplicated(subset=key).sum())
     if n > 0:
         click.echo(
-            f"  WARNING: {label}: {n} rows duplicate an earlier ({', '.join(key)})"
+            f"  WARNING: {label}: dropping {n} rows "
+            f"duplicating an earlier ({', '.join(key)})"
         )
+    return df.drop_duplicates(subset=key).reset_index(drop=True)
 
 
 def load_concat(paths, label, key):
-    """Load and concatenate parquet files, reporting duplicate rows."""
+    """Load and concatenate parquet files, dropping duplicate rows."""
     if not paths:
         raise click.ClickException(f"no {label} parquet files found")
     dfs = []
@@ -82,9 +91,7 @@ def load_concat(paths, label, key):
         df = pd.read_parquet(p)
         click.echo(f"  {p.name}: {len(df)} rows")
         dfs.append(df)
-    result = pd.concat(dfs, ignore_index=True)
-    report_duplicates(result, label, key)
-    return result
+    return dedup(pd.concat(dfs, ignore_index=True), label, key)
 
 
 def prefix_cols(df, prefix, skip=("uuid",)):
