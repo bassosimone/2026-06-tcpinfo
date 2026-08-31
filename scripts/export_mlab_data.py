@@ -73,6 +73,7 @@ def main(start_date, end_date, project):
             input=query_path.read_text(),
             stdout=subprocess.PIPE,
             text=True,
+            check=False,
         )
 
         # On error, surface the BQ CLI error emitted on the stdout.
