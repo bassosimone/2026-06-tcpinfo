@@ -236,7 +236,13 @@ def chart_bbr_phase(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
     fig.update_layout(
         xaxis_title="elapsed (s)",
         height=400,
-        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "left", "x": 0},
+        legend={
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": 1.02,
+            "xanchor": "left",
+            "x": 0,
+        },
     )
     fig.update_xaxes(showgrid=True)
     return fig
