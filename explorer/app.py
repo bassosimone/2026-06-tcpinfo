@@ -138,7 +138,7 @@ def chart_speed(
                 y=avg_tput,
                 name=f"Avg Throughput{suffix}",
                 mode="lines+markers",
-                line=dict(dash=dash),
+                line={"dash": dash},
             )
         )
         fig.add_trace(
@@ -147,7 +147,7 @@ def chart_speed(
                 y=snaps["bbr_BW"] * 8 / 1e6,
                 name=f"BBR BW{suffix}",
                 mode="lines+markers",
-                line=dict(dash=dash),
+                line={"dash": dash},
             )
         )
         fig.add_trace(
@@ -156,7 +156,7 @@ def chart_speed(
                 y=snaps["tcp_DeliveryRate"] * 8 / 1e6,
                 name=f"Delivery Rate{suffix}",
                 mode="lines+markers",
-                line=dict(dash=dash),
+                line={"dash": dash},
             )
         )
         fig.add_trace(
@@ -165,7 +165,7 @@ def chart_speed(
                 y=snaps["tcp_PacingRate"] * 8 / 1e6,
                 name=f"Pacing Rate{suffix}",
                 mode="lines+markers",
-                line=dict(dash=dash),
+                line={"dash": dash},
             )
         )
     if client_speed_mbps is not None:
@@ -199,7 +199,7 @@ def chart_bbr_phase(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
                 y=snaps["bbr_PacingGain"] / 256,
                 name=f"PacingGain{suffix}",
                 mode="lines+markers",
-                line=dict(dash=dash),
+                line={"dash": dash},
             ),
             secondary_y=False,
         )
@@ -209,7 +209,7 @@ def chart_bbr_phase(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
                 y=snaps["bbr_CwndGain"] / 256,
                 name=f"CwndGain{suffix}",
                 mode="lines+markers",
-                line=dict(dash=dash),
+                line={"dash": dash},
             ),
             secondary_y=True,
         )
@@ -236,7 +236,7 @@ def chart_bbr_phase(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
     fig.update_layout(
         xaxis_title="elapsed (s)",
         height=400,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "left", "x": 0},
     )
     fig.update_xaxes(showgrid=True)
     return fig
@@ -261,10 +261,10 @@ def chart_castate(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
     fig.update_layout(
         yaxis_title="state",
         xaxis_title="elapsed (s)",
-        yaxis=dict(
-            tickvals=[0, 1, 2, 3, 4],
-            ticktext=["Open", "Disorder", "CWR", "Recovery", "Loss"],
-        ),
+        yaxis={
+            "tickvals": [0, 1, 2, 3, 4],
+            "ticktext": ["Open", "Disorder", "CWR", "Recovery", "Loss"],
+        },
         height=400,
     )
     fig.update_xaxes(showgrid=True)
@@ -326,7 +326,7 @@ def chart_flight_size(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
                 y=inflight,
                 name=f"Kernel inflight{suffix}",
                 mode="lines+markers",
-                line=dict(dash=dash),
+                line={"dash": dash},
             )
         )
         fig.add_trace(
@@ -335,7 +335,7 @@ def chart_flight_size(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
                 y=snaps["tcp_SndCwnd"] * snaps["tcp_SndMSS"] / 1024,
                 name=f"SndCwnd × MSS{suffix}",
                 mode="lines+markers",
-                line=dict(dash=dash),
+                line={"dash": dash},
             )
         )
         fig.add_trace(
@@ -344,7 +344,7 @@ def chart_flight_size(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
                 y=snaps["tcp_SndWnd"] / 1024,
                 name=f"RWND{suffix}",
                 mode="lines+markers",
-                line=dict(dash=dash),
+                line={"dash": dash},
             )
         )
     fig.update_layout(yaxis_title="KB", xaxis_title="elapsed (s)", height=400)
