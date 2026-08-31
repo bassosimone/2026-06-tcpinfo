@@ -5,3 +5,9 @@ description = "Scripts to investigate TCP_INFO."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = ["click", "pandas", "plotly", "pyarrow", "statsmodels", "streamlit"]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.411",
+    "ruff>=0.16.5",
+]
