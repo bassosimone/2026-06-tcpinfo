@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run
 
 """Build the per-snapshot parquet from a tcpinfo weekly JSON export
-   containing tcpinfo data for download and upload ndt7 tests."""
+containing tcpinfo data for download and upload ndt7 tests."""
 
 import gzip
 import json
@@ -48,8 +48,18 @@ BBRINFO_FIELDS = [
 
 
 @click.command()
-@click.option("--start-date", required=True, type=click.DateTime(["%Y-%m-%d"]), help="Start date, included.")
-@click.option("--end-date", required=True, type=click.DateTime(["%Y-%m-%d"]), help="End date, excluded.")
+@click.option(
+    "--start-date",
+    required=True,
+    type=click.DateTime(["%Y-%m-%d"]),
+    help="Start date, included.",
+)
+@click.option(
+    "--end-date",
+    required=True,
+    type=click.DateTime(["%Y-%m-%d"]),
+    help="End date, excluded.",
+)
 def main(start_date, end_date):
     start = start_date.date()
     end = end_date.date()

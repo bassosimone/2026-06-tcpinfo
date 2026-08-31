@@ -42,8 +42,18 @@ BBRINFO_FIELDS = [
 
 
 @click.command()
-@click.option("--start-date", required=True, type=click.DateTime(["%Y-%m-%d"]), help="Start date, included.")
-@click.option("--end-date", required=True, type=click.DateTime(["%Y-%m-%d"]), help="End date, excluded.")
+@click.option(
+    "--start-date",
+    required=True,
+    type=click.DateTime(["%Y-%m-%d"]),
+    help="Start date, included.",
+)
+@click.option(
+    "--end-date",
+    required=True,
+    type=click.DateTime(["%Y-%m-%d"]),
+    help="End date, excluded.",
+)
 def main(start_date, end_date):
     start = start_date.date()
     end = end_date.date()
@@ -60,7 +70,7 @@ def main(start_date, end_date):
         for item in reader:
             try:
                 rj = json.loads(item["results_json"])
-            except (json.JSONDecodeError, TypeError):
+            except json.JSONDecodeError, TypeError:
                 continue
             s2c = rj.get("NDTResult.S2C")
             if not s2c:

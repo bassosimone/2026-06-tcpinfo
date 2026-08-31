@@ -12,9 +12,23 @@ QUERIES_DIR = Path(__file__).resolve().parent.parent / "queries"
 
 
 @click.command()
-@click.option("--start-date", required=True, type=click.DateTime(["%Y-%m-%d"]), help="Start date, included.")
-@click.option("--end-date", required=True, type=click.DateTime(["%Y-%m-%d"]), help="End date, excluded.")
-@click.option("--template", multiple=True, help="Template name(s) to generate. If omitted, generates all.")
+@click.option(
+    "--start-date",
+    required=True,
+    type=click.DateTime(["%Y-%m-%d"]),
+    help="Start date, included.",
+)
+@click.option(
+    "--end-date",
+    required=True,
+    type=click.DateTime(["%Y-%m-%d"]),
+    help="End date, excluded.",
+)
+@click.option(
+    "--template",
+    multiple=True,
+    help="Template name(s) to generate. If omitted, generates all.",
+)
 def main(start_date, end_date, template):
     start = start_date.date()
     end = end_date.date()

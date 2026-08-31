@@ -82,18 +82,28 @@ def _add_both(fig, elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, y_fn, name, mode,
     lbl_t1, lbl_t2 = _source_labels(mode)
     if elapsed_t1 is not None:
         suffix = f" {lbl_t1}" if lbl_t1 else ""
-        fig.add_trace(go.Scatter(
-            x=elapsed_t1, y=y_fn(snaps_t1),
-            name=f"{name}{suffix}", mode="lines+markers", **kw,
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=elapsed_t1,
+                y=y_fn(snaps_t1),
+                name=f"{name}{suffix}",
+                mode="lines+markers",
+                **kw,
+            )
+        )
     kw_server = dict(kw)
     kw_server["line"] = dict(kw.get("line", {}), dash="dash")
     if elapsed_t2 is not None:
         suffix = f" {lbl_t2}" if lbl_t2 else ""
-        fig.add_trace(go.Scatter(
-            x=elapsed_t2, y=y_fn(snaps_t2),
-            name=f"{name}{suffix}", mode="lines+markers", **kw_server,
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=elapsed_t2,
+                y=y_fn(snaps_t2),
+                name=f"{name}{suffix}",
+                mode="lines+markers",
+                **kw_server,
+            )
+        )
 
 
 def chart_rtt(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
@@ -109,7 +119,9 @@ def chart_rtt(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
     return fig
 
 
-def chart_speed(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode, client_speed_mbps=None):
+def chart_speed(
+    elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode, client_speed_mbps=None
+):
     fig = go.Figure()
     lbl_t1, lbl_t2 = _source_labels(mode)
     for elapsed, snaps, label, dash in [
@@ -121,29 +133,47 @@ def chart_speed(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode, client_speed_m
         suffix = f" {label}" if label else ""
         dt = elapsed - elapsed.iloc[0]
         avg_tput = snaps["tcp_BytesAcked"] * 8 / dt.where(dt > 0) / 1e6
-        fig.add_trace(go.Scatter(
-            x=elapsed, y=avg_tput,
-            name=f"Avg Throughput{suffix}", mode="lines+markers",
-            line=dict(dash=dash),
-        ))
-        fig.add_trace(go.Scatter(
-            x=elapsed, y=snaps["bbr_BW"] * 8 / 1e6,
-            name=f"BBR BW{suffix}", mode="lines+markers",
-            line=dict(dash=dash),
-        ))
-        fig.add_trace(go.Scatter(
-            x=elapsed, y=snaps["tcp_DeliveryRate"] * 8 / 1e6,
-            name=f"Delivery Rate{suffix}", mode="lines+markers",
-            line=dict(dash=dash),
-        ))
-        fig.add_trace(go.Scatter(
-            x=elapsed, y=snaps["tcp_PacingRate"] * 8 / 1e6,
-            name=f"Pacing Rate{suffix}", mode="lines+markers",
-            line=dict(dash=dash),
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=elapsed,
+                y=avg_tput,
+                name=f"Avg Throughput{suffix}",
+                mode="lines+markers",
+                line=dict(dash=dash),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=elapsed,
+                y=snaps["bbr_BW"] * 8 / 1e6,
+                name=f"BBR BW{suffix}",
+                mode="lines+markers",
+                line=dict(dash=dash),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=elapsed,
+                y=snaps["tcp_DeliveryRate"] * 8 / 1e6,
+                name=f"Delivery Rate{suffix}",
+                mode="lines+markers",
+                line=dict(dash=dash),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=elapsed,
+                y=snaps["tcp_PacingRate"] * 8 / 1e6,
+                name=f"Pacing Rate{suffix}",
+                mode="lines+markers",
+                line=dict(dash=dash),
+            )
+        )
     if client_speed_mbps is not None:
         fig.add_hline(
-            y=client_speed_mbps, line_dash="dot", line_color="black",
+            y=client_speed_mbps,
+            line_dash="dot",
+            line_color="black",
             annotation_text=f"<b>Client-reported: {client_speed_mbps:.1f} Mbps</b>",
             annotation_position="top left",
             annotation_bgcolor="rgba(255,255,255,0.85)",
@@ -166,16 +196,20 @@ def chart_bbr_phase(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
         suffix = f" {label}" if label else ""
         fig.add_trace(
             go.Scatter(
-                x=elapsed, y=snaps["bbr_PacingGain"] / 256,
-                name=f"PacingGain{suffix}", mode="lines+markers",
+                x=elapsed,
+                y=snaps["bbr_PacingGain"] / 256,
+                name=f"PacingGain{suffix}",
+                mode="lines+markers",
                 line=dict(dash=dash),
             ),
             secondary_y=False,
         )
         fig.add_trace(
             go.Scatter(
-                x=elapsed, y=snaps["bbr_CwndGain"] / 256,
-                name=f"CwndGain{suffix}", mode="lines+markers",
+                x=elapsed,
+                y=snaps["bbr_CwndGain"] / 256,
+                name=f"CwndGain{suffix}",
+                mode="lines+markers",
                 line=dict(dash=dash),
             ),
             secondary_y=True,
@@ -183,8 +217,13 @@ def chart_bbr_phase(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
     fig.update_yaxes(
         title_text="PacingGain",
         tickvals=[0.34, 0.75, 1.00, 1.25, 2.89],
-        ticktext=["Drain (0.34)", "BW drain (0.75)", "BW cruise (1.00)",
-                  "BW probe (1.25)", "Startup (2.89)"],
+        ticktext=[
+            "Drain (0.34)",
+            "BW drain (0.75)",
+            "BW cruise (1.00)",
+            "BW probe (1.25)",
+            "Startup (2.89)",
+        ],
         showgrid=True,
         secondary_y=False,
     )
@@ -207,7 +246,9 @@ def chart_bbr_phase(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
 def chart_bytes(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
     fig = go.Figure()
     args = (elapsed_t1, snaps_t1, elapsed_t2, snaps_t2)
-    _add_both(fig, *args, lambda s: s["tcp_BytesAcked"] / (1024 * 1024), "BytesAcked", mode)
+    _add_both(
+        fig, *args, lambda s: s["tcp_BytesAcked"] / (1024 * 1024), "BytesAcked", mode
+    )
     fig.update_layout(yaxis_title="MB", xaxis_title="elapsed (s)", height=400)
     fig.update_xaxes(showgrid=True)
     fig.update_yaxes(showgrid=True)
@@ -219,7 +260,8 @@ def chart_castate(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
     args = (elapsed_t1, snaps_t1, elapsed_t2, snaps_t2)
     _add_both(fig, *args, lambda s: s["tcp_CAState"], "CAState", mode)
     fig.update_layout(
-        yaxis_title="state", xaxis_title="elapsed (s)",
+        yaxis_title="state",
+        xaxis_title="elapsed (s)",
         yaxis=dict(
             tickvals=[0, 1, 2, 3, 4],
             ticktext=["Open", "Disorder", "CWR", "Recovery", "Loss"],
@@ -246,9 +288,13 @@ def chart_stalls(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
     args = (elapsed_t1, snaps_t1, elapsed_t2, snaps_t2)
     _add_both(fig, *args, lambda s: s["tcp_BusyTime"] / 1000, "BusyTime", mode)
     _add_both(fig, *args, lambda s: s["tcp_RWndLimited"] / 1000, "RWndLimited", mode)
-    _add_both(fig, *args, lambda s: s["tcp_SndBufLimited"] / 1000, "SndBufLimited", mode)
+    _add_both(
+        fig, *args, lambda s: s["tcp_SndBufLimited"] / 1000, "SndBufLimited", mode
+    )
     fig.update_layout(
-        yaxis_title="ms (cumulative)", xaxis_title="elapsed (s)", height=400,
+        yaxis_title="ms (cumulative)",
+        xaxis_title="elapsed (s)",
+        height=400,
     )
     fig.update_xaxes(showgrid=True)
     fig.update_yaxes(showgrid=True)
@@ -266,25 +312,42 @@ def chart_flight_size(elapsed_t1, snaps_t1, elapsed_t2, snaps_t2, mode):
             continue
         suffix = f" {label}" if label else ""
         inflight = (
-            (snaps["tcp_Unacked"] - snaps["tcp_Sacked"]
-             - snaps["tcp_Lost"] + snaps["tcp_Retrans"])
-            * snaps["tcp_SndMSS"] / 1024
+            (
+                snaps["tcp_Unacked"]
+                - snaps["tcp_Sacked"]
+                - snaps["tcp_Lost"]
+                + snaps["tcp_Retrans"]
+            )
+            * snaps["tcp_SndMSS"]
+            / 1024
         )
-        fig.add_trace(go.Scatter(
-            x=elapsed, y=inflight,
-            name=f"Kernel inflight{suffix}", mode="lines+markers",
-            line=dict(dash=dash),
-        ))
-        fig.add_trace(go.Scatter(
-            x=elapsed, y=snaps["tcp_SndCwnd"] * snaps["tcp_SndMSS"] / 1024,
-            name=f"SndCwnd × MSS{suffix}", mode="lines+markers",
-            line=dict(dash=dash),
-        ))
-        fig.add_trace(go.Scatter(
-            x=elapsed, y=snaps["tcp_SndWnd"] / 1024,
-            name=f"RWND{suffix}", mode="lines+markers",
-            line=dict(dash=dash),
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=elapsed,
+                y=inflight,
+                name=f"Kernel inflight{suffix}",
+                mode="lines+markers",
+                line=dict(dash=dash),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=elapsed,
+                y=snaps["tcp_SndCwnd"] * snaps["tcp_SndMSS"] / 1024,
+                name=f"SndCwnd × MSS{suffix}",
+                mode="lines+markers",
+                line=dict(dash=dash),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=elapsed,
+                y=snaps["tcp_SndWnd"] / 1024,
+                name=f"RWND{suffix}",
+                mode="lines+markers",
+                line=dict(dash=dash),
+            )
+        )
     fig.update_layout(yaxis_title="KB", xaxis_title="elapsed (s)", height=400)
     fig.update_xaxes(showgrid=True)
     fig.update_yaxes(showgrid=True)
@@ -313,7 +376,9 @@ summary = load_summary()
 
 st.sidebar.header("Controls")
 source_mode = st.sidebar.radio(
-    "Data source", ["Both", "Server", "Sidecar", "Merged"], index=0,
+    "Data source",
+    ["Both", "Server", "Sidecar", "Merged"],
+    index=0,
 )
 
 st.sidebar.header("Filters")
@@ -323,18 +388,27 @@ country = st.sidebar.selectbox("Country", countries)
 
 all_dates = sorted(summary["t2_date"].unique())
 date_range = st.sidebar.select_slider(
-    "Date range", options=all_dates,
+    "Date range",
+    options=all_dates,
     value=(all_dates[0], all_dates[-1]),
 )
 
 speed_max = float(summary["speed_mbps"].max())
 speed_range = st.sidebar.slider(
-    "Speed (Mbps)", 0.0, speed_max, (0.0, speed_max), step=1.0,
+    "Speed (Mbps)",
+    0.0,
+    speed_max,
+    (0.0, speed_max),
+    step=1.0,
 )
 
 rtt_cap = 1000.0
 rtt_range = st.sidebar.slider(
-    "MinRTT (ms)", 0.0, rtt_cap, (0.0, rtt_cap), step=1.0,
+    "MinRTT (ms)",
+    0.0,
+    rtt_cap,
+    (0.0, rtt_cap),
+    step=1.0,
 )
 
 servers = ["All"] + sorted(summary["t2_server_site"].dropna().unique().tolist())
@@ -345,28 +419,32 @@ school = st.sidebar.selectbox("School", schools)
 
 t1_snap_max = int(summary["t1_n_snapshots"].max())
 t1_snap_range = st.sidebar.slider(
-    "T1 snapshots (sidecar)", 1, t1_snap_max, (1, t1_snap_max),
+    "T1 snapshots (sidecar)",
+    1,
+    t1_snap_max,
+    (1, t1_snap_max),
 )
 
 t2_samp_max = int(summary["t2_n_samples"].max())
 t2_samp_range = st.sidebar.slider(
-    "T2 samples (ndt7)", 1, t2_samp_max, (1, t2_samp_max),
+    "T2 samples (ndt7)",
+    1,
+    t2_samp_max,
+    (1, t2_samp_max),
 )
 
 filtered = summary
 if country != "All":
     filtered = filtered[filtered["country_code"] == country]
 filtered = filtered[
-    (filtered["t2_date"] >= date_range[0])
-    & (filtered["t2_date"] <= date_range[1])
+    (filtered["t2_date"] >= date_range[0]) & (filtered["t2_date"] <= date_range[1])
 ]
 filtered = filtered[
     (filtered["speed_mbps"] >= speed_range[0])
     & (filtered["speed_mbps"] <= speed_range[1])
 ]
 filtered = filtered[
-    (filtered["minrtt_ms"] >= rtt_range[0])
-    & (filtered["minrtt_ms"] <= rtt_range[1])
+    (filtered["minrtt_ms"] >= rtt_range[0]) & (filtered["minrtt_ms"] <= rtt_range[1])
 ]
 if server != "All":
     filtered = filtered[filtered["t2_server_site"] == server]
@@ -384,9 +462,15 @@ filtered = filtered[
 st.divider()
 st.subheader(f"Available Tests ({len(filtered):,})")
 display_cols = [
-    "uuid", "country_code", "t2_date", "t2_server_site",
-    "speed_mbps", "minrtt_ms", "school_id",
-    "t1_n_snapshots", "t2_n_samples",
+    "uuid",
+    "country_code",
+    "t2_date",
+    "t2_server_site",
+    "speed_mbps",
+    "minrtt_ms",
+    "school_id",
+    "t1_n_snapshots",
+    "t2_n_samples",
 ]
 display_df = filtered[display_cols].sort_values("t2_date").reset_index(drop=True)
 
@@ -434,7 +518,10 @@ def format_uuid(u):
 
 
 selected = st.selectbox(
-    "Or pick from list", uuids, index=default_idx, format_func=format_uuid,
+    "Or pick from list",
+    uuids,
+    index=default_idx,
+    format_func=format_uuid,
 )
 st.session_state.selected_uuid = selected
 
@@ -450,7 +537,9 @@ if snaps_t1.empty and snaps_t2.empty:
 has_t1 = not snaps_t1.empty
 has_t2 = not snaps_t2.empty
 t2_start = snaps_t2["start_time"].iloc[0] if has_t2 else None
-elapsed_t1_raw = compute_elapsed(snaps_t1, "tcpinfo", start_time=t2_start) if has_t1 else None
+elapsed_t1_raw = (
+    compute_elapsed(snaps_t1, "tcpinfo", start_time=t2_start) if has_t1 else None
+)
 elapsed_t2_raw = compute_elapsed(snaps_t2, "ndt7") if has_t2 else None
 
 if source_mode == "Server":
@@ -486,18 +575,32 @@ st.divider()
 
 st.subheader("Selected Test")
 test_row = filtered[filtered["uuid"] == selected].iloc[0]
-props_df = pd.DataFrame({
-    "Property": [
-        "UUID", "Country", "Date", "Server", "Speed (Mbps)",
-        "MinRTT (ms)", "School", "T1 Snapshots", "T2 Samples",
-    ],
-    "Value": [
-        selected, test_row["country_code"], str(test_row["t2_date"]),
-        test_row.get("t2_server_site", ""), f"{test_row['speed_mbps']:.1f}",
-        f"{test_row['minrtt_ms']:.0f}", test_row.get("school_id", ""),
-        str(int(test_row["t1_n_snapshots"])), str(int(test_row["t2_n_samples"])),
-    ],
-})
+props_df = pd.DataFrame(
+    {
+        "Property": [
+            "UUID",
+            "Country",
+            "Date",
+            "Server",
+            "Speed (Mbps)",
+            "MinRTT (ms)",
+            "School",
+            "T1 Snapshots",
+            "T2 Samples",
+        ],
+        "Value": [
+            selected,
+            test_row["country_code"],
+            str(test_row["t2_date"]),
+            test_row.get("t2_server_site", ""),
+            f"{test_row['speed_mbps']:.1f}",
+            f"{test_row['minrtt_ms']:.0f}",
+            test_row.get("school_id", ""),
+            str(int(test_row["t1_n_snapshots"])),
+            str(int(test_row["t2_n_samples"])),
+        ],
+    }
+)
 st.dataframe(props_df, width="stretch", hide_index=True)
 
 # ---------------------------------------------------------------------------
@@ -529,6 +632,13 @@ for title, key, fn, extra_kw in CHARTS:
         with st.expander("About this chart"):
             st.markdown(desc_path.read_text())
     st.plotly_chart(
-        fn(elapsed_t1, snaps_t1_view, elapsed_t2, snaps_t2, mode=source_mode, **extra_kw),
+        fn(
+            elapsed_t1,
+            snaps_t1_view,
+            elapsed_t2,
+            snaps_t2,
+            mode=source_mode,
+            **extra_kw,
+        ),
         width="stretch",
     )

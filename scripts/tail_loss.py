@@ -39,8 +39,8 @@ def main(input_path):
     loss_1 = (tail["tail_loss_s"] >= 1.0).sum()
 
     click.echo(f"  Tests with both T2 and T3: {n_tail:,}")
-    click.echo(f"  Tail loss >= 0.5s: {loss_05:,} ({loss_05/n_tail*100:.1f}%)")
-    click.echo(f"  Tail loss >= 1.0s: {loss_1:,} ({loss_1/n_tail*100:.1f}%)")
+    click.echo(f"  Tail loss >= 0.5s: {loss_05:,} ({loss_05 / n_tail * 100:.1f}%)")
+    click.echo(f"  Tail loss >= 1.0s: {loss_1:,} ({loss_1 / n_tail * 100:.1f}%)")
     click.echo(f"  Median tail loss: {tail['tail_loss_s'].median():.3f} s")
     click.echo(f"  p95 tail loss:    {tail['tail_loss_s'].quantile(0.95):.3f} s")
     click.echo("")

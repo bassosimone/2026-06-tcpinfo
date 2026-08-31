@@ -30,9 +30,9 @@ def describe_gap(gap, label):
         f"p95={g.quantile(0.95):+.3f}  p99={g.quantile(0.99):+.3f}"
     )
     click.echo(
-        f"  > 1s: {(g > 1.0).mean()*100:.1f}%  "
-        f"> 0.5s: {(g > 0.5).mean()*100:.1f}%  "
-        f"<= 0: {(g <= 0).mean()*100:.1f}%"
+        f"  > 1s: {(g > 1.0).mean() * 100:.1f}%  "
+        f"> 0.5s: {(g > 0.5).mean() * 100:.1f}%  "
+        f"<= 0: {(g <= 0).mean() * 100:.1f}%"
     )
     click.echo("")
 

@@ -47,8 +47,18 @@ BBRINFO_FIELDS = [
 
 
 @click.command()
-@click.option("--start-date", required=True, type=click.DateTime(["%Y-%m-%d"]), help="Start date, included.")
-@click.option("--end-date", required=True, type=click.DateTime(["%Y-%m-%d"]), help="End date, excluded.")
+@click.option(
+    "--start-date",
+    required=True,
+    type=click.DateTime(["%Y-%m-%d"]),
+    help="Start date, included.",
+)
+@click.option(
+    "--end-date",
+    required=True,
+    type=click.DateTime(["%Y-%m-%d"]),
+    help="End date, excluded.",
+)
 def main(start_date, end_date):
     start = start_date.date()
     end = end_date.date()

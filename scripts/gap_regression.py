@@ -45,9 +45,15 @@ def main(input_path):
     clean_both = dfr[(t3_elapsed_s >= 9.5) & (t2_elapsed_s >= 9.5)].copy()
 
     click.echo(f"Tests with flight data: {len(dfr):,}")
-    click.echo(f"  clean-close (t3 >= 9.5): {len(clean_t3):,} ({len(clean_t3)/len(dfr)*100:.0f}%)")
-    click.echo(f"  clean-close (t2 >= 9.5): {len(clean_t2):,} ({len(clean_t2)/len(dfr)*100:.0f}%)")
-    click.echo(f"  clean-close (both):      {len(clean_both):,} ({len(clean_both)/len(dfr)*100:.0f}%)")
+    click.echo(
+        f"  clean-close (t3 >= 9.5): {len(clean_t3):,} ({len(clean_t3) / len(dfr) * 100:.0f}%)"
+    )
+    click.echo(
+        f"  clean-close (t2 >= 9.5): {len(clean_t2):,} ({len(clean_t2) / len(dfr) * 100:.0f}%)"
+    )
+    click.echo(
+        f"  clean-close (both):      {len(clean_both):,} ({len(clean_both) / len(dfr) * 100:.0f}%)"
+    )
     click.echo("")
 
     for subset_label, subset in [
@@ -62,7 +68,9 @@ def main(input_path):
         model = sm.OLS(subset["gap_s"], X).fit()
         a, b = model.params.iloc[0], model.params.iloc[1]
         click.echo(f"  {subset_label} (n={len(subset):,}):")
-        click.echo(f"    gap = {a:+.4f} + {b:+.4f} × (notsent_max/pacing_last)  R² = {model.rsquared:.3f}")
+        click.echo(
+            f"    gap = {a:+.4f} + {b:+.4f} × (notsent_max/pacing_last)  R² = {model.rsquared:.3f}"
+        )
         click.echo("")
 
 

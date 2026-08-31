@@ -46,7 +46,9 @@ def main(input_path):
         ("T3 BBR BW", ep["t3_bbr_BW"]),
     ]
 
-    click.echo(f"{'Metric':<30}  {'n':>6}  {'median |err|':>12}  {'p90 |err|':>10}  {'median err':>11}")
+    click.echo(
+        f"{'Metric':<30}  {'n':>6}  {'median |err|':>12}  {'p90 |err|':>10}  {'median err':>11}"
+    )
     for name, vals in metrics:
         valid_mask = vals.notna() & (ground_truth > 0)
         v = vals[valid_mask]
@@ -55,9 +57,9 @@ def main(input_path):
         abs_err = signed_err.abs()
         click.echo(
             f"  {name:<28}  {len(abs_err):>6}  "
-            f"{abs_err.median()*100:>10.1f} %  "
-            f"{abs_err.quantile(0.90)*100:>8.1f} %  "
-            f"{signed_err.median()*100:>+9.1f} %"
+            f"{abs_err.median() * 100:>10.1f} %  "
+            f"{abs_err.quantile(0.90) * 100:>8.1f} %  "
+            f"{signed_err.median() * 100:>+9.1f} %"
         )
     click.echo("")
 
@@ -75,9 +77,9 @@ def main(input_path):
             signed_err = (v - gt) / gt
             abs_err = signed_err.abs()
             click.echo(
-                f"    {name:<28}  median |err| = {abs_err.median()*100:.1f}%  "
-                f"p90 = {abs_err.quantile(0.90)*100:.1f}%  "
-                f"median err = {signed_err.median()*100:+.1f}%"
+                f"    {name:<28}  median |err| = {abs_err.median() * 100:.1f}%  "
+                f"p90 = {abs_err.quantile(0.90) * 100:.1f}%  "
+                f"median err = {signed_err.median() * 100:+.1f}%"
             )
         click.echo("")
 
