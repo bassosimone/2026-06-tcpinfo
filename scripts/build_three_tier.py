@@ -26,7 +26,10 @@ import pandas as pd
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
-FILE_RE = re.compile(r"^\w+_(\d{8})_(\d{8})_download\.parquet$")
+# TODO(bassosimone): this regex currently works because the directory
+# either contains parquet for download files or tcp-info snapshots. We
+# will need to improve this code when we add support for upload.
+FILE_RE = re.compile(r"^\w+_(\d{8})_(\d{8})(_download)?\.parquet$")
 
 
 def parse_ymd(s):
@@ -35,9 +38,10 @@ def parse_ymd(s):
 
 
 def find_parquets(prefix, win_start, win_end):
-    """Find download parquets whose date range overlaps [win_start, win_end)."""
+    """Find a tier's parquets whose date range overlaps [win_start, win_end)."""
     results = []
-    for p in sorted(DATA_DIR.glob(f"{prefix}_*_download.parquet")):
+    # TODO(bassosimone): see above comment about supporting upload.
+    for p in sorted(DATA_DIR.glob(f"{prefix}_*.parquet")):
         m = FILE_RE.match(p.name)
         if not m:
             continue

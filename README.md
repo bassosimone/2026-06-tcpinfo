@@ -95,16 +95,20 @@ in the `data/` directory.
 
 ## Transforming tcp-info Sidecar Data
 
-The [build_tcpinfo_download.py](scripts/build_tcpinfo_download.py) script
-converts each raw tcpinfo JSON export into a per-snapshot parquet file.
-Each row is one sidecar `Snapshot` with its absolute `Timestamp` and
-the same `TCPInfo` and `BBRInfo` fields as the ndt7 transform. The
-tcpinfo query already filters by ndt7 UUIDs, so every row corresponds
-to a download test.
+The [build_tcpinfo.py](scripts/build_tcpinfo.py) script converts each
+raw tcpinfo JSON export into a per-snapshot parquet file. Each row is
+one sidecar `Snapshot` with its absolute `Timestamp` and the same
+`TCPInfo` and `BBRInfo` fields as the ndt7 transform.
 
-Run `make build_tcpinfo_download` to build all weekly chunks. This
-produces files like `data/tcpinfo_20260501_20260508_download.parquet`
-in the `data/` directory.
+There is no download/upload direction for tcpinfo snapshots. Hence,
+the end result is a single parquet file per chunk, containing snapshots
+for both directions. Merging with ndt7 data on the UUID (an operation
+performed by subsequent stages) ensures that we only select the
+UUIDs of interest for the direction that we are analyzing.
+
+Run `make build_tcpinfo` to build all weekly chunks. This produces
+files like `data/tcpinfo_20260501_20260508.parquet` in the `data/`
+directory.
 
 ## Transforming Superset Data
 

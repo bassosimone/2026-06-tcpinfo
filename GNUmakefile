@@ -60,11 +60,11 @@ build_ndt7_download:
 	done
 
 #doc:
-#doc: - build_tcpinfo_download: builds tcpinfo download parquet files
-.PHONY: build_tcpinfo_download
-build_tcpinfo_download:
+#doc: - build_tcpinfo: builds tcpinfo parquet files (both download and upload)
+.PHONY: build_tcpinfo
+build_tcpinfo:
 	@for c in $(WEEKS); do \
-		./scripts/build_tcpinfo_download.py --start-date $${c%:*} --end-date $${c#*:} || exit 1; \
+		./scripts/build_tcpinfo.py --start-date $${c%:*} --end-date $${c#*:} || exit 1; \
 	done
 
 #doc:

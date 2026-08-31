@@ -1,6 +1,7 @@
 #!/usr/bin/env -S uv run
 
-"""Build per-snapshot download parquet from a tcpinfo weekly JSON export."""
+"""Build the per-snapshot parquet from a tcpinfo weekly JSON export
+   containing tcpinfo data for download and upload ndt7 tests."""
 
 import gzip
 import json
@@ -57,7 +58,7 @@ def main(start_date, end_date):
     in_path = DATA_DIR / f"tcpinfo_{suffix}.json.gz"
     if not in_path.exists():
         raise click.ClickException(f"input not found: {in_path}")
-    out_path = DATA_DIR / f"tcpinfo_{suffix}_download.parquet"
+    out_path = DATA_DIR / f"tcpinfo_{suffix}.parquet"
 
     with gzip.open(in_path, "rt") as fp:
         data = json.load(fp)

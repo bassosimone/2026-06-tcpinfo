@@ -49,7 +49,11 @@ def load_summary():
 
 @st.cache_data
 def load_snapshots(tier):
-    pattern = str(DATA_DIR / f"{tier}_*_download.parquet")
+    # TODO(bassosimone): currently this filter matches (a) download
+    # files and (b) tcp-info snapshots. Merging works because we are
+    # filtering on UUID. We will need to improve this code later on
+    # when we add support for loading upload data as well.
+    pattern = str(DATA_DIR / f"{tier}_*.parquet")
     files = sorted(glob.glob(pattern))
     return pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
 
