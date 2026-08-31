@@ -15,6 +15,22 @@ and server-side data collected by the tcp-info sidecar.
 - GNU make (the `GNUmakefile` is not compatible with BSD
   make or other make variants).
 
+## Data Window
+
+Every make target operates on a date window bounded by `START`
+(included) and `END` (excluded). They default to `2026-01-01`
+and `2026-08-01`, that is, January through July 2026. Override
+them on the command line for partial re-runs, e.g.
+`make build_three_tier START=2026-01-01 END=2026-02-01`.
+
+BigQuery targets chunk the window weekly; Superset targets chunk
+it monthly. Weekly chunks are clipped at calendar month
+boundaries, so a chunk never spans two months and each month is
+a self-contained set of chunks. See
+[list_chunks.py](scripts/list_chunks.py).
+
+Run `make help` for the list of targets.
+
 ## Query Templates
 
 The `queries/templates/` directory contains SQL query templates
@@ -29,9 +45,11 @@ with `@DATE_START@` and `@DATE_END@` placeholders:
 - [superset.sql](queries/templates/superset.sql) — exports
   Giga client sessions from Superset for MW and MD.
 
-Run `make generate_queries` to instantiate the templates
-for all weekly blocks in May 2026. This produces files like
-`queries/ndt7_20260501_20260508.sql` in the `queries/`
+Run `make generate_queries` to instantiate the templates over
+the data window: `ndt7` and `tcpinfo` weekly, `superset`
+monthly. This produces files like
+`queries/ndt7_20260101_20260108.sql` and
+`queries/superset_20260101_20260201.sql` in the `queries/`
 directory. Generated queries are gitignored.
 
 ## Fetching Data
@@ -43,13 +61,24 @@ convention as the generated queries. Data files are gitignored.
 To fetch M-Lab data (ndt7 and tcpinfo), use the `bq` CLI
 tool. See [the M-Lab website](https://www.measurementlab.net/data/docs/bq/quickstart/)
 for instructions on how to set it up. Then run
-`make export_mlab_data` to export all weekly blocks.
+`make export_mlab_data` to export all weekly chunks.
+
+The export skips chunks whose output file already exists, so an
+interrupted run resumes by re-running the same command. Delete
+an output file to force its re-export. Set `BQ_PROJECT` to choose
+the billing project.
+
+Each weekly chunk scans roughly 0.65 TB for ndt7 and 3.0 TB for
+tcpinfo. A first attempt at the default window hit a BigQuery
+`QueryUsagePerUserPerDay` custom quota after three chunks, so
+the full window of 34 chunks needs either pacing across days or
+a dedicated, alternative billing project.
 
 To fetch Giga data (superset), you need an account for
-[Superset](https://superset.giga.global/sqllab/). Run the
-generated `superset_*.sql` query in the Superset SQL Lab
-and export the result as CSV. Save it as
-`data/superset_{YYYYMMDD}_{YYYYMMDD}.csv.gz`.
+[Superset](https://superset.giga.global/sqllab/). Run each
+generated `superset_*.sql` query, one per month in the window,
+in the Superset SQL Lab and export each result as CSV. Save them
+as `data/superset_{YYYYMMDD}_{YYYYMMDD}.csv.gz`.
 
 ## Transforming ndt-server ndt7 Data
 
@@ -60,7 +89,7 @@ for download tests. Each row is one `ServerMeasurements` snapshot
 a fixed set of `TCPInfo` and `BBRInfo` fields without computing
 any derived values.
 
-Run `make build_ndt7_download` to build all weekly blocks. This
+Run `make build_ndt7_download` to build all weekly chunks. This
 produces files like `data/ndt7_20260501_20260508_download.parquet`
 in the `data/` directory.
 
@@ -73,7 +102,7 @@ the same `TCPInfo` and `BBRInfo` fields as the ndt7 transform. The
 tcpinfo query already filters by ndt7 UUIDs, so every row corresponds
 to a download test.
 
-Run `make build_tcpinfo_download` to build all weekly blocks. This
+Run `make build_tcpinfo_download` to build all weekly chunks. This
 produces files like `data/tcpinfo_20260501_20260508_download.parquet`
 in the `data/` directory.
 
@@ -86,8 +115,10 @@ download tests. Each row is one test with the `LastServerMeasurement`
 time and bytes (for app-level goodput). It also preserves the
 `country_code`, `school_id`, and `giga_id_school` metadata.
 
-Run `make build_superset_download` to build the monthly export.
-This produces `data/superset_20260501_20260601_download.parquet`.
+Run `make build_superset_download` to build all monthly chunks.
+This produces files like
+`data/superset_20260101_20260201_download.parquet` in the
+`data/` directory.
 
 ## Building the Three-Tier Joined Dataset
 
@@ -110,7 +141,9 @@ wall-clock time from T2's `StartTime` to the last T1
 snapshot timestamp.
 
 Run `make build_three_tier` to build the joined dataset. This
-produces `data/three_tier_20260501_20260601.parquet`.
+produces one file covering the whole window, e.g.
+`data/three_tier_20260101_20260801.parquet` for the default
+window.
 
 ## Explorer
 

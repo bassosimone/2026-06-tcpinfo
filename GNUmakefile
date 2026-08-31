@@ -2,9 +2,10 @@
 #doc: usage: make [target] [START=YYYY-MM-DD] [END=YYYY-MM-DD]
 #doc:
 #doc: START (included) and END (excluded) bound the data window and
-#doc: default to the v2 window (January through August 2026). Override
-#doc: them on the command line for partial re-runs, e.g. resuming a
-#doc: failed export from a given week onward.
+#doc: default to the v2 window: 2026-01-01 to 2026-08-01, that is,
+#doc: January through July 2026. Override them on the command line for
+#doc: partial re-runs, e.g. resuming a failed export from a given week
+#doc: onward.
 #doc:
 #doc: Example: make generate_queries START=2026-01-01 END=2026-02-01
 #doc:
