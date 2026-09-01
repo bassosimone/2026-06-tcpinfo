@@ -187,7 +187,15 @@ The [gap_distribution.py](scripts/gap_distribution.py) script
 measures the gap between client-reported and server-reported
 test duration: `client_elapsed - server_elapsed`. It reports
 percentile statistics overall, per country, and per-school
-heterogeneity (schools with at least 10 tests).
+heterogeneity (schools with at least 10 tests). It also shows
+other definitions of the test duration grounded in data available
+only to the `ndt-server` or `tcp-info` test helper.
+
+This script exists for two reasons: calibrating against the
+baseline provided by Giga (i.e., that there are tests running
+for a very long amount of time) and contextualizing this
+information by comparing to what `ndt-server` and `tcp-info`
+observed on their end.
 
 Run `make gap_distribution` to produce the analysis.
 
