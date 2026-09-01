@@ -151,6 +151,16 @@ produces one file covering the whole window, e.g.
 `data/three_tier_20260101_20260801.parquet` for the default
 window.
 
+## TCPInfo Dumper
+
+The `scripts/dump_test_snapshots.py` script dumps the evolution
+of specific TCPInfo state variables for a specific test.
+
+We currently use this tool to investigate what happens to the
+`ndt7` tests run by `giga-meter` when they enter the drain
+phase (i.e., after the state machine transitions away from the
+`ESTABLISHED` state due to either party closing the socket).
+
 ## Explorer
 
 The [explorer/](explorer/) directory contains a Streamlit app for
