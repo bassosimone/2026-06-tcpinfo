@@ -7,14 +7,29 @@ superset (T3) parquets whose date ranges overlap the requested window.
 Aggregates T1 and T2 to one row per test (last snapshot), joins all
 three tiers on UUID (inner join), and writes the result.
 
-For T1 (tcpinfo sidecar), only ESTABLISHED snapshots (tcp_State == 1)
-are used, filtering out post-test states (e.g. FIN_WAIT).
+The ndt7 spec states that the server SHOULD be the party closing the
+underlying TLS and TCP connections. For this reason, in the common
+case, a transition away from the ESTABLISHED state marks the end of
+the userspace observable download test. There are also cases in
+which, of course, clients may close the connection. Either way, when
+the socket enters a draining state, it may become unstable, which
+is why, for T1 (tcpinfo sidecar) the canonical per-test row contains
+data extracted from the latest ESTABLISHED snapshot (corresponding
+to tcp_State == 1). However, observing the draining behavior of the
+socket is also relevant to this investigation. For this reason, in
+addition to the canonical columns, we include the t1_any_* columns
+and the t1_elapsed_any_s column. Collectively, these columns
+allow studying what happens during the drain phase and answer
+the question of why the `giga-meter` client runs, at times, for
+more than 50 seconds, which is unexpected behavior considering that
+the spec wants the test to run for 10s plus some leeway.
 
 To merge T3 (Superset) we rely on the inner join with T1 and T2.
 
 Since the tcpinfo sidecar has no kernel ElapsedTime, we derive
-t1_elapsed_s as wall-clock time from T2's StartTime to the last
-T1 snapshot timestamp.
+t1_elapsed_s (and t1_elapsed_any_s) as wall-clock time from T2's
+StartTime to the corresponding T1 snapshot timestamp. We also
+materialize t2_wall_s from T2's StartTime and EndTime.
 """
 
 import re
@@ -115,7 +130,14 @@ def agg_ndt7(df):
 
 
 def agg_tcpinfo(df):
-    """Aggregate tcpinfo (T1) per-snapshot -> per-test (last ESTABLISHED snapshot)."""
+    """Aggregate tcpinfo (T1) per-snapshot -> per-test. We collect
+    both the "canonical" columns corresponding to ESTABLISHED and
+    the t1_any_* columns capturing the drain state. See the module
+    docstring for additional information. Tests not containing any
+    ESTABLISHED snapshots are dropped from the output.
+    """
+
+    # 1. Collect the columns corresponding to the ESTABLISHED state.
     est = df[df["tcp_State"] == 1].copy()
     est = est.sort_values(["uuid", "snapshot_index"])
 
@@ -129,7 +151,29 @@ def agg_tcpinfo(df):
         .reset_index()
     )
 
-    result = last.drop(columns=["snapshot_index"]).merge(stats, on="uuid")
+    # 2. Last snapshot regardless of state. Keep BytesAcked and
+    # BytesRetrans because these are the counters that still move
+    # while the queue drains; drain metrics are derivable by
+    # subtracting the corresponding last-ESTABLISHED columns.
+    anystate = df.sort_values(["uuid", "snapshot_index"])
+    any_last = anystate.drop_duplicates(subset="uuid", keep="last")
+    any_last = any_last[
+        ["uuid", "timestamp", "tcp_State", "tcp_BytesAcked", "tcp_BytesRetrans"]
+    ].rename(
+        columns={
+            "timestamp": "t1_any_timestamp",
+            "tcp_State": "t1_any_state",
+            "tcp_BytesAcked": "t1_any_BytesAcked",
+            "tcp_BytesRetrans": "t1_any_BytesRetrans",
+        }
+    )
+
+    # 3. Merge ESTABLISHED and any rows together.
+    result = (
+        last.drop(columns=["snapshot_index"])
+        .merge(stats, on="uuid")
+        .merge(any_last, on="uuid")
+    )
     return prefix_cols(result, "t1")
 
 
@@ -196,6 +240,14 @@ def main(start_date, end_date):
     t1_ts = pd.to_datetime(joined["t1_timestamp"], utc=True)
     t2_st = pd.to_datetime(joined["t2_start_time"], utc=True)
     joined["t1_elapsed_s"] = (t1_ts - t2_st).dt.total_seconds()
+
+    # Same construction for the last snapshot regardless of state.
+    t1_any_ts = pd.to_datetime(joined["t1_any_timestamp"], utc=True)
+    joined["t1_elapsed_any_s"] = (t1_any_ts - t2_st).dt.total_seconds()
+
+    # Server wall-clock duration, for convenience.
+    t2_et = pd.to_datetime(joined["t2_end_time"], utc=True)
+    joined["t2_wall_s"] = (t2_et - t2_st).dt.total_seconds()
 
     out_path = DATA_DIR / f"three_tier_{suffix}.parquet"
     joined.to_parquet(out_path, index=False)
