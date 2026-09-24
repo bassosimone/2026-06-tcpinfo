@@ -161,6 +161,13 @@ We currently use this tool to investigate what happens to the
 phase (i.e., after the state machine transitions away from the
 `ESTABLISHED` state due to either party closing the socket).
 
+The `--bbr` flag replaces the byte counters with the BBR state
+(bandwidth estimate, min RTT, pacing and cwnd gains) and the
+pacing rate. The `--limits` flag replaces them with the time
+spent busy, receive-window limited, and send-buffer limited, the
+peer's advertised window, the delivery rate, and other extra
+variables useful for interpreting the output.
+
 ## Explorer
 
 The [explorer/](explorer/) directory contains a Streamlit app for
