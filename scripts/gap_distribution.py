@@ -209,7 +209,9 @@ def describe_closers(df):
     table["n"] = table.sum(axis=1)
 
     click.echo("Who closed first, by t3_client bin (counts, then row %):")
-    click.echo("  server: first non-ESTABLISHED sidecar state is FIN_WAIT1/2 or TIME_WAIT")
+    click.echo(
+        "  server: first non-ESTABLISHED sidecar state is FIN_WAIT1/2 or TIME_WAIT"
+    )
     click.echo("  client: CLOSE_WAIT or LAST_ACK; both: CLOSING (simultaneous close)")
     click.echo("  unknown: every archived snapshot is ESTABLISHED\n")
     header = "  ".join(f"{c:>8}" for c in table.columns)
@@ -223,6 +225,114 @@ def describe_closers(df):
         n = row["n"]
         cells = "  ".join(f"{v / n * 100:7.1f}%" for v in row[cols])
         click.echo(f"  {label:<14} {cells}  {int(n):8,}")
+    click.echo("")
+
+
+def describe_classes(df):
+    """Print the three-class model of the TCP-level condition at close.
+
+    The classes describe where the sender's data was being held up,
+    as seen by the tcp-info sidecar, before user space reacts:
+
+      Z (flow control): the receiver advertised a zero window at some
+        point while ESTABLISHED (t1_sndwnd_min == 0).
+      Q (bufferbloat): at the last ESTABLISHED snapshot, the backlog
+        the kernel still has to deliver (NotsentBytes in the socket
+        send buffer plus Unacked * SndMSS in flight) would take one
+        second or more at the test's mean throughput (BytesAcked over
+        t1_elapsed_s). Most of this backlog is the server's own send
+        buffer, which the kernel autotunes regardless of path rate.
+      O (rest): neither.
+
+    Z takes precedence because a stalled receiver also leaves a
+    backlog. We restrict to tests whose client reported more than
+    9 s, so that early ends (the setup eating the 12 s client budget)
+    do not mix with the drain symptoms. Both the 1 s backlog cut and
+    the 9 s cut are arbitrary cuts through continuous distributions
+    (see docs/2026-09-report/0300-gap.md for the sensitivity).
+    """
+    sub = df[df["t3_client_elapsed_time"] > 9].copy()
+
+    # 1. Classify. A test with no acked bytes has no rate; we clip
+    # the rate to one byte per second so that a nonzero backlog
+    # counts as (effectively) infinite drain time.
+    backlog = sub["t1_tcp_NotsentBytes"] + sub["t1_tcp_Unacked"] * sub["t1_tcp_SndMSS"]
+    rate = (sub["t1_tcp_BytesAcked"] / sub["t1_elapsed_s"].clip(lower=0.1)).clip(
+        lower=1.0
+    )
+    sub["backlog_s"] = backlog / rate
+    cls = pd.Series("O", index=sub.index)
+    cls[sub["backlog_s"] >= 1.0] = "Q"
+    cls[sub["t1_sndwnd_min"] == 0] = "Z"
+    sub["cls"] = cls
+    order = ["Z", "Q", "O"]
+    names = {"Z": "Z flow control", "Q": "Q bufferbloat", "O": "O rest"}
+
+    # 2. Class by symptom, as counts with the column percentage in
+    # parentheses. Each column sums to 100%: the n column gives the
+    # class share of the population, and each symptom column says
+    # which class the tests showing that symptom belong to.
+    sub["drain_s"] = sub["t1_elapsed_any_s"] - sub["t1_elapsed_s"]
+    symptoms = [
+        ("endpoint>15s", sub["t1_elapsed_any_s"] > 15),
+        ("drain>5s", sub["drain_s"] > 5),
+        ("client>12.5s", sub["t3_client_elapsed_time"] > 12.5),
+        ("client>15s", sub["t3_client_elapsed_time"] > 15),
+    ]
+    counts = pd.DataFrame(
+        {
+            label: [int(cond[sub["cls"] == c].sum()) for c in order]
+            for label, cond in symptoms
+        },
+        index=order,
+    )
+    counts.insert(0, "n", [int((sub["cls"] == c).sum()) for c in order])
+
+    click.echo("TCP-level condition at close (tests with t3_client > 9 s):")
+    click.echo("  Z: zero send window seen while ESTABLISHED (flow control)")
+    click.echo("  Q: backlog at close (unsent + in flight) >= 1 s at mean throughput")
+    click.echo("  O: neither; Z takes precedence over Q")
+    click.echo("  cells: count (% of the column total)\n")
+    header = "  ".join(f"{c:>16}" for c in counts.columns)
+    click.echo(f"  {'class':<16} {header}")
+    totals = counts.sum()
+    for c in order:
+        cells = "  ".join(
+            f"{int(v):8,} ({v / t * 100:5.1f}%)" for v, t in zip(counts.loc[c], totals)
+        )
+        click.echo(f"  {names[c]:<16} {cells}")
+    cells = "  ".join(f"{int(v):8,}         " for v in totals)
+    click.echo(f"  {'total':<16} {cells}\n")
+
+    # 4. Network view per class, at the last ESTABLISHED snapshot:
+    # p50 [p25, p75]. Units follow scripts/dump_test_snapshots.py
+    # (RTTs in microseconds, rates in bytes per second).
+    metrics = [
+        (
+            "mean throughput (Mbit/s)",
+            sub["t1_tcp_BytesAcked"] * 8 / 1e6 / sub["t1_elapsed_s"].clip(lower=0.1),
+        ),
+        ("BBR max BW (Mbit/s)", sub["t1_bbr_BW"] * 8 / 1e6),
+        ("MinRTT (ms)", sub["t1_tcp_MinRTT"] / 1e3),
+        ("smoothed RTT (ms)", sub["t1_tcp_RTT"] / 1e3),
+        ("backlog at close (s)", sub["backlog_s"]),
+        (
+            "rwnd-limited / busy",
+            sub["t1_tcp_RWndLimited"] / sub["t1_tcp_BusyTime"].clip(lower=1),
+        ),
+    ]
+
+    def cell(series):
+        q = series.quantile([0.25, 0.5, 0.75])
+        digits = 2 if q[0.75] < 1 else 1
+        return f"{q[0.5]:.{digits}f} [{q[0.25]:.{digits}f}, {q[0.75]:.{digits}f}]"
+
+    click.echo("  Per class, p50 [p25, p75] at the last ESTABLISHED snapshot:\n")
+    header = "  ".join(f"{names[c]:>20}" for c in order)
+    click.echo(f"  {'':<26} {header}")
+    for label, series in metrics:
+        cells = "  ".join(f"{cell(series[sub['cls'] == c]):>20}" for c in order)
+        click.echo(f"  {label:<26} {cells}")
     click.echo("")
 
 
@@ -268,6 +378,7 @@ def main(input_path):
     # force-close (ndt-server spec.MaxRuntime).
     describe_durations(df)
     describe_closers(df)
+    describe_classes(df)
     describe_corner_cases(df)
 
 

@@ -30,6 +30,11 @@ the connection first (FIN_WAIT1 or later: the server; CLOSE_WAIT or
 LAST_ACK: the client). These columns are missing when the sidecar
 never observed the socket leaving ESTABLISHED.
 
+The per-test statistics over ESTABLISHED snapshots (t1_n_snapshots,
+t1_notsent_max, t1_sndwnd_min) summarize the whole ESTABLISHED
+lifetime rather than the last snapshot; t1_sndwnd_min == 0 flags a
+zero-window (flow-control) stall at some point during the test.
+
 To merge T3 (Superset) we rely on the inner join with T1 and T2.
 
 Since the tcpinfo sidecar has no kernel ElapsedTime, we derive
@@ -153,6 +158,9 @@ def agg_tcpinfo(df):
         .agg(
             t1_n_snapshots=("snapshot_index", "count"),
             t1_notsent_max=("tcp_NotsentBytes", "max"),
+            # Zero means the receiver advertised a zero window at some
+            # point: a flow-control stall (see docs/2026-09-report/0300-gap.md).
+            t1_sndwnd_min=("tcp_SndWnd", "min"),
         )
         .reset_index()
     )

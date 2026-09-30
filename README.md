@@ -142,7 +142,9 @@ the first snapshot after the socket left ESTABLISHED, using the
 `t1_first_non_est_` prefix (missing when the sidecar never saw
 the socket leave ESTABLISHED). The script also
 computes `t1_notsent_max` (peak NotsentBytes across ESTABLISHED
-snapshots). The inner join with T1 and T2 provides temporal filtering
+snapshots) and `t1_sndwnd_min` (minimum SndWnd across ESTABLISHED
+snapshots; zero flags a zero-window stall). The inner
+join with T1 and T2 provides temporal filtering
 for T3 (Superset), which does not include a server-side
 timestamp. Since the tcpinfo sidecar has no kernel
 `ElapsedTime`, the script derives `t1_elapsed_s` as
