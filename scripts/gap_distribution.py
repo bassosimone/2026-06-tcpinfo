@@ -180,6 +180,52 @@ def describe_corner_cases(df):
     click.echo("")
 
 
+def describe_closers(df):
+    """Print who closed the connection first, by client duration.
+
+    We read the first non-ESTABLISHED sidecar state: FIN_WAIT1 or
+    later means the server sent its FIN first, CLOSE_WAIT or LAST_ACK
+    means the client did, CLOSING means both sent a FIN before seeing
+    the other's (simultaneous close). Because the ETL thins snapshots,
+    the recorded state may be later than the first one the socket
+    entered. When every archived snapshot is ESTABLISHED, we do not
+    know how the socket ended (the sidecar saw no orderly close).
+    """
+    state = df["t1_first_non_est_state"]
+    who = pd.Series("unknown", index=df.index)
+    who[state.isin([4, 5, 6])] = "server"
+    who[state.isin([8, 9])] = "client"
+    who[state == 11] = "both"
+
+    # Bins on the client duration: below 9.5 s (early end), 0.5 s
+    # steps across the normal end and the 12 s timer, and the tail
+    # above the 15 s server force-close. Start included, end excluded.
+    edges = [0, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 15, float("inf")]
+    labels = [f"[{a}, {b})" for a, b in zip(edges[:-1], edges[1:])]
+    bins = pd.cut(df["t3_client_elapsed_time"], edges, right=False, labels=labels)
+
+    cols = ["server", "client", "both", "unknown"]
+    table = pd.crosstab(bins, who).reindex(columns=cols, fill_value=0)
+    table["n"] = table.sum(axis=1)
+
+    click.echo("Who closed first, by t3_client bin (counts, then row %):")
+    click.echo("  server: first non-ESTABLISHED sidecar state is FIN_WAIT1/2 or TIME_WAIT")
+    click.echo("  client: CLOSE_WAIT or LAST_ACK; both: CLOSING (simultaneous close)")
+    click.echo("  unknown: every archived snapshot is ESTABLISHED\n")
+    header = "  ".join(f"{c:>8}" for c in table.columns)
+    click.echo(f"  {'t3_client':<14} {header}")
+    for label, row in table.iterrows():
+        cells = "  ".join(f"{int(v):8,}" for v in row)
+        click.echo(f"  {label:<14} {cells}")
+    click.echo("")
+    click.echo(f"  {'t3_client':<14} {header}")
+    for label, row in table.iterrows():
+        n = row["n"]
+        cells = "  ".join(f"{v / n * 100:7.1f}%" for v in row[cols])
+        click.echo(f"  {label:<14} {cells}  {int(n):8,}")
+    click.echo("")
+
+
 @click.command()
 @click.option(
     "--input",
@@ -221,6 +267,7 @@ def main(input_path):
     # cases where the client duration exceeds the server's 15 s
     # force-close (ndt-server spec.MaxRuntime).
     describe_durations(df)
+    describe_closers(df)
     describe_corner_cases(df)
 
 

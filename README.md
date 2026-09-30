@@ -137,7 +137,10 @@ all three tiers survive.
 For T1 (tcpinfo sidecar), we collect canonical columns
 associated with the ESTABLISHED state. In addition, it also
 computes extra columns representing the socket drain using
-the `t1_any_` prefix to set them apart. The script also
+the `t1_any_` prefix to set them apart, and columns describing
+the first snapshot after the socket left ESTABLISHED, using the
+`t1_first_non_est_` prefix (missing when the sidecar never saw
+the socket leave ESTABLISHED). The script also
 computes `t1_notsent_max` (peak NotsentBytes across ESTABLISHED
 snapshots). The inner join with T1 and T2 provides temporal filtering
 for T3 (Superset), which does not include a server-side

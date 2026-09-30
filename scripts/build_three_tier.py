@@ -24,6 +24,12 @@ the question of why the `giga-meter` client runs, at times, for
 more than 50 seconds, which is unexpected behavior considering that
 the spec wants the test to run for 10s plus some leeway.
 
+We also include the t1_first_non_est_* columns, describing the first
+snapshot after the socket left ESTABLISHED, which tells us who closed
+the connection first (FIN_WAIT1 or later: the server; CLOSE_WAIT or
+LAST_ACK: the client). These columns are missing when the sidecar
+never observed the socket leaving ESTABLISHED.
+
 To merge T3 (Superset) we rely on the inner join with T1 and T2.
 
 Since the tcpinfo sidecar has no kernel ElapsedTime, we derive
@@ -168,11 +174,29 @@ def agg_tcpinfo(df):
         }
     )
 
-    # 3. Merge ESTABLISHED and any rows together.
+    # 3. First snapshot after leaving ESTABLISHED. Because the ETL
+    # thins snapshots (see docs/2026-09-report/0000-ndt7.md), this
+    # may be a later state than the first one the socket entered.
+    # Tests whose archived snapshots are all ESTABLISHED get missing
+    # values here, hence the left merge and the nullable dtype.
+    non_est = anystate[anystate["tcp_State"] != 1]
+    non_est_first = non_est.drop_duplicates(subset="uuid", keep="first")
+    non_est_first = non_est_first[["uuid", "timestamp", "tcp_State"]].rename(
+        columns={
+            "timestamp": "t1_first_non_est_timestamp",
+            "tcp_State": "t1_first_non_est_state",
+        }
+    )
+    non_est_first["t1_first_non_est_state"] = non_est_first[
+        "t1_first_non_est_state"
+    ].astype("Int64")
+
+    # 4. Merge ESTABLISHED, any, and first-non-ESTABLISHED rows.
     result = (
         last.drop(columns=["snapshot_index"])
         .merge(stats, on="uuid")
         .merge(any_last, on="uuid")
+        .merge(non_est_first, on="uuid", how="left")
     )
     return prefix_cols(result, "t1")
 
@@ -244,6 +268,11 @@ def main(start_date, end_date):
     # Same construction for the last snapshot regardless of state.
     t1_any_ts = pd.to_datetime(joined["t1_any_timestamp"], utc=True)
     joined["t1_elapsed_any_s"] = (t1_any_ts - t2_st).dt.total_seconds()
+
+    # Same construction for the first non-ESTABLISHED snapshot
+    # (missing when the socket never left ESTABLISHED).
+    t1_fne_ts = pd.to_datetime(joined["t1_first_non_est_timestamp"], utc=True)
+    joined["t1_elapsed_first_non_est_s"] = (t1_fne_ts - t2_st).dt.total_seconds()
 
     # Server wall-clock duration, for convenience.
     t2_et = pd.to_datetime(joined["t2_end_time"], utc=True)
