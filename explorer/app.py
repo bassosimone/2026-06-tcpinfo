@@ -388,6 +388,11 @@ source_mode = st.sidebar.radio(
 
 st.sidebar.header("Filters")
 
+# Exact UUID lookup. When set, it overrides every other filter, so
+# that a UUID copied from a report or a script output can be found
+# without scrolling through tens of thousands of rows.
+uuid_lookup = st.sidebar.text_input("UUID (exact match, overrides filters)").strip()
+
 countries = ["All"] + sorted(summary["country_code"].dropna().unique().tolist())
 country = st.sidebar.selectbox("Country", countries)
 
@@ -463,6 +468,17 @@ filtered = filtered[
     (filtered["t2_n_samples"] >= t2_samp_range[0])
     & (filtered["t2_n_samples"] <= t2_samp_range[1])
 ]
+
+# The UUID lookup bypasses the filters above: the sliders keep their
+# values, but they would only risk hiding the one row we want.
+if uuid_lookup:
+    filtered = summary[summary["uuid"] == uuid_lookup]
+    if filtered.empty:
+        st.warning(
+            f"UUID {uuid_lookup} is not in the three-tier dataset "
+            "(the test may be missing from one of the tiers)."
+        )
+        st.stop()
 
 st.divider()
 st.subheader(f"Available Tests ({len(filtered):,})")
