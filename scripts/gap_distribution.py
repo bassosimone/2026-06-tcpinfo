@@ -184,8 +184,11 @@ def describe_classes(df):
     backlog. We restrict to tests whose client reported more than
     9 s, so that early ends (the setup eating the 12 s client budget)
     do not mix with the drain symptoms. Both the 1 s backlog cut and
-    the 9 s cut are arbitrary cuts through continuous distributions
-    (see docs/2026-09-report/0300-gap.md for the sensitivity).
+    the 9 s cut are arbitrary cuts through continuous distributions.
+    In an ad-hoc run (2026-09-30, not reproduced by this script),
+    raising the backlog cut to 2 s and 5 s reduced the Q share from
+    17.9% to 11.1% and 2.6%, and the share of the tests above 15 s
+    attributed to Q from 84% to 78% and 59%.
     """
     sub = df[df["t3_client_elapsed_time"] > 9].copy()
 
