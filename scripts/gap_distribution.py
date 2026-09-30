@@ -26,23 +26,6 @@ import pandas as pd
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
-# TCP state numbers as reported by the kernel; this mirrors the
-# enum in include/net/tcp_states.h (Linux).
-TCP_STATES = {
-    1: "ESTABLISHED",
-    2: "SYN_SENT",
-    3: "SYN_RECV",
-    4: "FIN_WAIT1",
-    5: "FIN_WAIT2",
-    6: "TIME_WAIT",
-    7: "CLOSE",
-    8: "CLOSE_WAIT",
-    9: "LAST_ACK",
-    10: "LISTEN",
-    11: "CLOSING",
-    12: "NEW_SYN_RECV",
-}
-
 
 def describe_gap(gap, label):
     """Print percentile summary and threshold fractions for a gap series."""
@@ -130,53 +113,6 @@ def describe_durations(df):
     quantile_header()
     for label, series in deltas.items():
         quantile_row(series, label)
-    click.echo("")
-
-
-def describe_corner_cases(df):
-    """Print statistics about the long-client-duration corner cases.
-
-    The selector t3_client > 15 s is convenient but arbitrary. A more
-    principled selector targets the mechanism directly: the last sidecar
-    snapshot is FIN_WAIT1 and the post-ESTABLISHED drain lasted more
-    than 5 s. We print both and their overlap.
-    """
-    t3_client = df["t3_client_elapsed_time"]
-    drain_s = df["t1_elapsed_any_s"] - df["t1_elapsed_s"]
-
-    long_client = t3_client > 15.0
-    long_drain = (df["t1_any_state"] == 4) & (drain_s > 5.0)
-
-    n = len(df)
-    sub = df[long_client]
-    click.echo(
-        f"Corner cases, selector A (t3_client > 15 s): "
-        f"{len(sub):,}/{n:,} tests ({len(sub) / n * 100:.2f}%)"
-    )
-    click.echo(
-        f"Corner cases, selector B (last state FIN_WAIT1, "
-        f"drain > 5 s): {int(long_drain.sum()):,}/{n:,} tests "
-        f"({long_drain.mean() * 100:.2f}%)"
-    )
-    click.echo(
-        f"Overlap: A&B {int((long_client & long_drain).sum()):,}  "
-        f"A only {int((long_client & ~long_drain).sum()):,}  "
-        f"B only {int((~long_client & long_drain).sum()):,}\n"
-    )
-
-    click.echo("Final sidecar state within selector A:")
-    states = sub["t1_any_state"].map(lambda s: TCP_STATES.get(s, str(s)))
-    for name, count in states.value_counts().items():
-        click.echo(f"  {name:<12} {count:5,}  ({count / len(sub) * 100:.1f}%)")
-    click.echo("")
-
-    click.echo("Within selector A, does the sidecar track the client?\n")
-    quantile_header()
-    quantile_row(
-        df.loc[long_client, "t1_elapsed_any_s"] - t3_client[long_client],
-        "t1_any - t3_client",
-    )
-    quantile_row(drain_s[long_client], "drain")
     click.echo("")
 
 
@@ -373,13 +309,12 @@ def main(input_path):
     click.echo("")
 
     # 3. Statistics explaining the gap: how each tier measures
-    # the test duration, how the measures pair up, and the corner
-    # cases where the client duration exceeds the server's 15 s
-    # force-close (ndt-server spec.MaxRuntime).
+    # the test duration, who closed the connection first, and the
+    # TCP-level condition at close for the long tests (those where
+    # the client duration exceeds ~9 s; see describe_classes).
     describe_durations(df)
     describe_closers(df)
     describe_classes(df)
-    describe_corner_cases(df)
 
 
 if __name__ == "__main__":
