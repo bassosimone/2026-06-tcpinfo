@@ -88,6 +88,14 @@ def main(start_date, end_date):
                 "country_code": item.get("country_code"),
                 "school_id": item.get("school_id"),
                 "giga_id_school": item.get("giga_id_school"),
+                # Client metadata (added 2026-10-01 to the export): the
+                # machine, the OS, how the test was triggered (`notes` is
+                # set by code in giga-meter >= 2.0.1: 'daily', 'startup',
+                # 'manual', 'first'), and the giga-meter release.
+                "browser_id": item.get("browser_id"),
+                "device_type": item.get("device_type"),
+                "notes": item.get("notes"),
+                "app_version": item.get("app_version"),
             }
             for field in TCPINFO_FIELDS:
                 row[f"tcp_{field}"] = tcp.get(field)

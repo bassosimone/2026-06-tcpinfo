@@ -117,7 +117,10 @@ converts the Superset CSV export into a per-test parquet file for
 download tests. Each row is one test with the `LastServerMeasurement`
 `TCPInfo` and `BBRInfo` fields plus `LastClientMeasurement` elapsed
 time and bytes (for app-level goodput). It also preserves the
-`country_code`, `school_id`, and `giga_id_school` metadata.
+`country_code`, `school_id`, and `giga_id_school` metadata, and the
+client metadata `browser_id`, `device_type`, `notes` (how the test
+was triggered: `daily`, `startup`, `manual`, or `first`), and
+`app_version`.
 
 Run `make build_superset_download` to build all monthly chunks.
 This produces files like

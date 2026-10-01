@@ -210,9 +210,23 @@ def agg_tcpinfo(df):
 
 
 def prepare_superset(df):
-    """Prepare superset (T3) -- already per-test, just prefix."""
+    """Prepare superset (T3) -- already per-test, just prefix.
+
+    School and client metadata keep their Superset names: they
+    describe the test, not a tier's view of the connection."""
     return prefix_cols(
-        df, "t3", skip=("uuid", "country_code", "school_id", "giga_id_school")
+        df,
+        "t3",
+        skip=(
+            "uuid",
+            "country_code",
+            "school_id",
+            "giga_id_school",
+            "browser_id",
+            "device_type",
+            "notes",
+            "app_version",
+        ),
     )
 
 
