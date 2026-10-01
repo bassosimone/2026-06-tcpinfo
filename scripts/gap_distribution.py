@@ -22,6 +22,7 @@ to the Giga backend and available for querying via Superset.
 from pathlib import Path
 
 import click
+import numpy as np
 import pandas as pd
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -164,6 +165,36 @@ def describe_closers(df):
     click.echo("")
 
 
+CLASS_ORDER = ["Z", "Q", "O"]
+CLASS_NAMES = {"Z": "Z flow control", "Q": "Q bufferbloat", "O": "O rest"}
+
+
+def classify_long_tests(df):
+    """Return a copy of the long tests (t3_client > 9 s) with the class.
+
+    Adds `backlog_s` (backlog at the last ESTABLISHED snapshot, in
+    seconds at the test's mean throughput) and `cls` (Z, Q, or O; see
+    describe_classes for the definitions). A test with no acked bytes
+    has no rate; we clip the rate to one byte per second so that a
+    nonzero backlog counts as (effectively) infinite drain time.
+    """
+    sub = df[df["t3_client_elapsed_time"] > 9].copy()
+    backlog = sub["t1_tcp_NotsentBytes"] + sub["t1_tcp_Unacked"] * sub["t1_tcp_SndMSS"]
+    rate = (sub["t1_tcp_BytesAcked"] / sub["t1_elapsed_s"].clip(lower=0.1)).clip(
+        lower=1.0
+    )
+    sub["backlog_s"] = backlog / rate
+
+    # The classes are disjoint: the first matching condition wins, so
+    # a test with a zero window and a large backlog is Z, not Q.
+    sub["cls"] = np.select(
+        [sub["t1_sndwnd_min"] == 0, sub["backlog_s"] >= 1.0],
+        ["Z", "Q"],
+        default="O",
+    )
+    return sub
+
+
 def describe_classes(df):
     """Print the three-class model of the TCP-level condition at close.
 
@@ -190,22 +221,9 @@ def describe_classes(df):
     17.9% to 11.1% and 2.6%, and the share of the tests above 15 s
     attributed to Q from 84% to 78% and 59%.
     """
-    sub = df[df["t3_client_elapsed_time"] > 9].copy()
-
-    # 1. Classify. A test with no acked bytes has no rate; we clip
-    # the rate to one byte per second so that a nonzero backlog
-    # counts as (effectively) infinite drain time.
-    backlog = sub["t1_tcp_NotsentBytes"] + sub["t1_tcp_Unacked"] * sub["t1_tcp_SndMSS"]
-    rate = (sub["t1_tcp_BytesAcked"] / sub["t1_elapsed_s"].clip(lower=0.1)).clip(
-        lower=1.0
-    )
-    sub["backlog_s"] = backlog / rate
-    cls = pd.Series("O", index=sub.index)
-    cls[sub["backlog_s"] >= 1.0] = "Q"
-    cls[sub["t1_sndwnd_min"] == 0] = "Z"
-    sub["cls"] = cls
-    order = ["Z", "Q", "O"]
-    names = {"Z": "Z flow control", "Q": "Q bufferbloat", "O": "O rest"}
+    sub = classify_long_tests(df)
+    order = CLASS_ORDER
+    names = CLASS_NAMES
 
     # 2. Class by symptom, as counts with the column percentage in
     # parentheses. Each column sums to 100%: the n column gives the
@@ -274,6 +292,61 @@ def describe_classes(df):
         click.echo(f"  {label:<26} {cells}")
     click.echo("")
 
+KIND_ORDER = ["daily", "startup", "manual", "first", "other"]
+
+
+def describe_triggers(df):
+    """Print the late-client-duration share by how the test was triggered.
+
+    giga-meter sets the Superset `notes` field from code: `daily` is
+    the scheduler, `startup` runs within 15 minutes of the app launch,
+    `manual` is the button on the test page, `first` is the first test
+    after install (v2.0.3, schedule.service.ts and starttest.page.ts).
+    Anything else, including a missing value, is `other`. A manual
+    test runs with the window shown; a daily test usually does not.
+    So, if the late 12 s timer came from Chromium's handling of hidden
+    pages, manual tests would not show it.
+
+    Every table below has the same layout, so that each percentage
+    has one stated denominator: the `n` column is the row's share of
+    the table's population (the column sums to 100%); the two late
+    columns are the share of the row's own n (count of the row's
+    tests above the threshold, over the row's n).
+    """
+    sub = classify_long_tests(df)
+    kind = sub["notes"].where(sub["notes"].isin(KIND_ORDER[:-1]), "other")
+    sub["kind"] = kind
+    late = [
+        ("late>12.5s", sub["t3_client_elapsed_time"] > 12.5),
+        ("late>15s", sub["t3_client_elapsed_time"] > 15),
+    ]
+
+    def table(mask, title):
+        pop = sub[mask]
+        kinds = [k for k in KIND_ORDER if (pop["kind"] == k).any()]
+        total = len(pop)
+        click.echo(f"  {title} (n={total:,})")
+        header = f"{'n (% of n=' + f'{total:,}' + ')':>24}" + "".join(
+            f"{label + ' (% of row n)':>26}" for label, _ in late
+        )
+        click.echo(f"  {'trigger':<10} {header}")
+        for k in kinds + ["total"]:
+            rows = pop if k == "total" else pop[pop["kind"] == k]
+            n = len(rows)
+            cells = f"{n:14,} ({n / total * 100:5.1f}%)"
+            for _, cond in late:
+                c = int(cond[rows.index].sum())
+                cells += f"{c:16,} ({c / max(n, 1) * 100:5.1f}%)"
+            click.echo(f"  {k:<10} {cells}")
+        click.echo("")
+
+    click.echo("Late client duration by trigger kind (tests with t3_client > 9 s):")
+    click.echo("  daily: scheduler; startup: within 15 min of app launch;")
+    click.echo("  manual: button on the test page; first: first test after install\n")
+    table(pd.Series(True, index=sub.index), "All long tests")
+    for c in CLASS_ORDER:
+        table(sub["cls"] == c, f"Class {CLASS_NAMES[c]}")
+
 
 @click.command()
 @click.option(
@@ -318,6 +391,10 @@ def main(input_path):
     describe_durations(df)
     describe_closers(df)
     describe_classes(df)
+
+    # 4. The same long tests by trigger kind: a control for the
+    # hidden-page explanations of the late client-side timer.
+    describe_triggers(df)
 
 
 if __name__ == "__main__":

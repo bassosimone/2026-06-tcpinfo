@@ -212,6 +212,13 @@ for a very long amount of time) and contextualizing this
 information by comparing to what `ndt-server` and `tcp-info`
 observed on their end.
 
+The script also prints the long tests by trigger kind (`notes`:
+`daily`, `startup`, `manual`, `first`), overall and within each
+class, with the share of late client durations in each row. A
+manual test runs with the app window shown, so this is a control
+for explanations of the late client-side timer that depend on the
+page being hidden.
+
 Run `make gap_distribution` to produce the analysis.
 
 ### Gap Regression
