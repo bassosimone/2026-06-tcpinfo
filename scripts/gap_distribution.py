@@ -292,6 +292,67 @@ def describe_classes(df):
         click.echo(f"  {label:<26} {cells}")
     click.echo("")
 
+# Local time zones of the two countries, for the hour-of-day table.
+# Malawi is UTC+2 all year; Moldova switches between UTC+2 and UTC+3.
+LOCAL_TZ = {"MW": "Africa/Blantyre", "MD": "Europe/Chisinau"}
+
+
+def describe_hours(df):
+    """Print the long tests by local hour of day, per country.
+
+    The population is the same as describe_classes (t3_client > 9 s).
+    A weekday row followed by its four 6 h blocks (night, morning,
+    afternoon, evening in local time), then the same for the
+    weekend. In each row: the number of tests and its share of the
+    country's long tests (the four blocks sum to the row above
+    them), then the share of the row's tests in class Q and in
+    class Z, and the share of the row's tests whose client duration
+    is above 12.5 s and above 15 s. Counts and percentages are
+    printed in separate columns: `share` is the row's n over the
+    country's long tests, each `rate` is the preceding count over
+    the row's n.
+    """
+    sub = classify_long_tests(df)
+    ts = pd.to_datetime(sub["t2_start_time"], utc=True, format="ISO8601")
+    cols = [
+        ("Q", sub["cls"] == "Q"),
+        ("Z", sub["cls"] == "Z"),
+        ("late>12.5s", sub["t3_client_elapsed_time"] > 12.5),
+        ("late>15s", sub["t3_client_elapsed_time"] > 15),
+    ]
+
+    def row(label, mask, total):
+        n = int(mask.sum())
+        cells = f"{n:8,} {n / total * 100:6.1f}%"
+        for _, cond in cols:
+            c = int((cond & mask).sum())
+            cells += f"{c:12,} {c / max(n, 1) * 100:6.1f}%"
+        click.echo(f"  {label:<14} {cells}")
+
+    click.echo("Long tests (t3_client > 9 s) by local time of day and country:")
+    click.echo("  n and share: tests in the row and their share of the country's long tests")
+    click.echo("  (the share column sums to 100% over weekday and weekend);")
+    click.echo("  each other pair: tests in the row with that property, and their rate over the row's n\n")
+    for cc, tz in LOCAL_TZ.items():
+        mask_cc = sub["country_code"] == cc
+        total = int(mask_cc.sum())
+        if total <= 0:
+            continue
+        local = ts[mask_cc].dt.tz_convert(tz)
+        hour = pd.Series(local.dt.hour, index=sub.index[mask_cc]).reindex(sub.index)
+        weekday = pd.Series(local.dt.weekday < 5, index=sub.index[mask_cc]).reindex(sub.index)
+        weekday = weekday.fillna(False).astype(bool)
+        header = f"{'n':>8} {'share':>7}" + "".join(f"{c:>12} {'rate':>7}" for c, _ in cols)
+        click.echo(f"  {cc} ({tz}, n={total:,})")
+        click.echo(f"  {'':<14} {header}")
+        for label, days in (("weekday", weekday), ("weekend", ~weekday)):
+            row(label, mask_cc & days, total)
+            for h in range(0, 24, 6):
+                m = mask_cc & days & (hour >= h) & (hour < h + 6)
+                row(f"  {h:02d}-{h + 5:02d}h", m, total)
+        click.echo("")
+
+
 KIND_ORDER = ["daily", "startup", "manual", "first", "other"]
 
 
@@ -307,11 +368,11 @@ def describe_triggers(df):
     So, if the late 12 s timer came from Chromium's handling of hidden
     pages, manual tests would not show it.
 
-    Every table below has the same layout, so that each percentage
-    has one stated denominator: the `n` column is the row's share of
-    the table's population (the column sums to 100%); the two late
-    columns are the share of the row's own n (count of the row's
-    tests above the threshold, over the row's n).
+    Every table below has the same layout, with counts and
+    percentages in separate columns: `n` is the row's tests and
+    `share` is n over the table's population (the share column sums
+    to 100%); each late column is the count of the row's tests above
+    the threshold and `rate` is that count over the row's n.
     """
     sub = classify_long_tests(df)
     kind = sub["notes"].where(sub["notes"].isin(KIND_ORDER[:-1]), "other")
@@ -326,23 +387,24 @@ def describe_triggers(df):
         kinds = [k for k in KIND_ORDER if (pop["kind"] == k).any()]
         total = len(pop)
         click.echo(f"  {title} (n={total:,})")
-        header = f"{'n (% of n=' + f'{total:,}' + ')':>24}" + "".join(
-            f"{label + ' (% of row n)':>26}" for label, _ in late
+        header = f"{'n':>8} {'share':>7}" + "".join(
+            f"{label:>12} {'rate':>7}" for label, _ in late
         )
         click.echo(f"  {'trigger':<10} {header}")
         for k in kinds + ["total"]:
             rows = pop if k == "total" else pop[pop["kind"] == k]
             n = len(rows)
-            cells = f"{n:14,} ({n / total * 100:5.1f}%)"
+            cells = f"{n:8,} {n / total * 100:6.1f}%"
             for _, cond in late:
                 c = int(cond[rows.index].sum())
-                cells += f"{c:16,} ({c / max(n, 1) * 100:5.1f}%)"
+                cells += f"{c:12,} {c / max(n, 1) * 100:6.1f}%"
             click.echo(f"  {k:<10} {cells}")
         click.echo("")
 
     click.echo("Late client duration by trigger kind (tests with t3_client > 9 s):")
     click.echo("  daily: scheduler; startup: within 15 min of app launch;")
-    click.echo("  manual: button on the test page; first: first test after install\n")
+    click.echo("  manual: button on the test page; first: first test after install")
+    click.echo("  share: n over the table total; rate: the preceding count over the row's n\n")
     table(pd.Series(True, index=sub.index), "All long tests")
     for c in CLASS_ORDER:
         table(sub["cls"] == c, f"Class {CLASS_NAMES[c]}")
@@ -392,7 +454,11 @@ def main(input_path):
     describe_closers(df)
     describe_classes(df)
 
-    # 4. The same long tests by trigger kind: a control for the
+    # 4. The same long tests by local hour of day: class prevalence
+    # and late client durations follow the school hours.
+    describe_hours(df)
+
+    # 5. The same long tests by trigger kind: a control for the
     # hidden-page explanations of the late client-side timer.
     describe_triggers(df)
 

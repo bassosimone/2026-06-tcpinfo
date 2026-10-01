@@ -212,6 +212,10 @@ for a very long amount of time) and contextualizing this
 information by comparing to what `ndt-server` and `tcp-info`
 observed on their end.
 
+The script also prints the long tests by weekday, weekend, and 6 h
+block of the local day, per country: the share in each class and the share of late
+client durations follow the school hours.
+
 The script also prints the long tests by trigger kind (`notes`:
 `daily`, `startup`, `manual`, `first`), overall and within each
 class, with the share of late client durations in each row. A
